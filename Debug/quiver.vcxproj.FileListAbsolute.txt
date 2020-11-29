@@ -1,0 +1,2 @@
+E:\Projekt\Quiver\Debug\quiver.exe
+E:\Projekt\Quiver\Debug\quiver.pdb
