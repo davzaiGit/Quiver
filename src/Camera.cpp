@@ -1,29 +1,24 @@
 #include "Camera.h"
 
-glm::mat4 Core::createPerspectiveMatrix(float zNear, float zFar)
-{
-	const float frustumScale = 1.1f;
-	glm::mat4 perspective;
-	perspective[0][0] = frustumScale;
-	perspective[1][1] = frustumScale;
-	perspective[2][2] = (zFar + zNear) / (zNear - zFar);
-	perspective[3][2] = (2 * zFar * zNear) / (zNear - zFar);
-	perspective[2][3] = -1;
-	perspective[3][3] = 0;
-
-	return perspective;
-}
-
 glm::mat4 Core::createViewMatrix( glm::vec3 position, glm::vec3 forward, glm::vec3 up )
 {
-	glm::vec3 side = glm::cross(forward, up);
-	glm::mat4 cameraRotation;
-	cameraRotation[0][0] = side.x; cameraRotation[1][0] = side.y; cameraRotation[2][0] = side.z;
-	cameraRotation[0][1] = up.x; cameraRotation[1][1] = up.y; cameraRotation[2][1] = up.z;
-	cameraRotation[0][2] = -forward.x; cameraRotation[1][2] = -forward.y; cameraRotation[2][2] = -forward.z;
+    glm::vec3 cameraTarget = forward;
+    glm::vec3 fwd = glm::normalize(position - cameraTarget);
+    glm::vec3 sup = up;
+    glm::vec3 side = glm::normalize(glm::cross(sup, fwd));
+    sup = glm::cross(fwd, side);
+    // Pamietaj o tym, ze macierz perspektywy patrzy w kierunku -z.
+    glm::mat4 cameraRotation = { side.x,sup.x,fwd.x,0.0f,
+                                side.y,sup.y,fwd.y,0.0f,
+                                side.z,sup.z,fwd.z,0.0f,
+                                0.0f,0.0f,0.0f,1.0f,
 
-	glm::mat4 cameraTranslation;
-	cameraTranslation[3] = glm::vec4(-position, 1.0f);
+    };
+    glm::mat4 cameraTranslation = { 1.0f,0.0f,0.0f,0.0f,
+                                    0.0f,1.0f,0.0f,0.0f,
+                                    0.0f,0.0f,1.0f,0.0f,
+                                    -position.x,-position.y,-position.z,1.0f,
 
-	return cameraRotation * cameraTranslation;
+    };
+    return cameraRotation * cameraTranslation;
 }

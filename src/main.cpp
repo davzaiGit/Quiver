@@ -20,14 +20,21 @@ obj::Model sphereModel;
 Core::RenderContext shipContext;
 Core::RenderContext sphereContext;
 
-
+float yaw = 0.0f;
+float pitch = 0.0f;
 float cameraAngle = 0;
+int lastX = 640;
+int lastY = 360;
 glm::vec3 cameraPos = glm::vec3(-5, 0, 0);
 glm::vec3 cameraDir;
-
+glm::vec3 cameraFront;
+glm::vec3 direction;
 glm::mat4 cameraMatrix, perspectiveMatrix;
 
 glm::vec3 lightSource = glm::normalize(glm::vec3(0.0f, 0.0f, 3.0f));
+
+
+bool firstMouse = true;
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -37,8 +44,8 @@ void keyboard(unsigned char key, int x, int y)
 	{
 	case 'z': cameraAngle -= angleSpeed; break;
 	case 'x': cameraAngle += angleSpeed; break;
-	case 'w': cameraPos += cameraDir * moveSpeed; break;
-	case 's': cameraPos -= cameraDir * moveSpeed; break;
+	case 'w': cameraPos += direction * moveSpeed; break;
+	case 's': cameraPos -= direction * moveSpeed; break;
 	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0, 1, 0)) * moveSpeed; break;
 	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0, 1, 0)) * moveSpeed; break;
 	case 'e': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeed; break;
@@ -46,13 +53,37 @@ void keyboard(unsigned char key, int x, int y)
 	}
 }
 
-glm::mat4 createCameraMatrix()
+void mouse_callback(int x, int y)
 {
-	cameraDir = glm::vec3(cosf(cameraAngle), 0.0f, sinf(cameraAngle));
-	glm::vec3 up = glm::vec3(0,1,0);
+	if (firstMouse)
+	{
+		lastX = x;
+		lastY = y;
+		firstMouse = false;
+	}
 
-	return Core::createViewMatrix(cameraPos, cameraDir, up);
+	float xoffset = x - lastX;
+	float yoffset = lastY - y;
+	lastX = x;
+	lastY = y;
+
+	float sensitivity = 0.1f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	yaw += xoffset;
+	pitch += yoffset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(direction);
 }
+
 
 void drawObject(GLuint program,Core::RenderContext context, glm::mat4 modelMatrix, glm::vec3 color)
 {
@@ -62,7 +93,6 @@ void drawObject(GLuint program,Core::RenderContext context, glm::mat4 modelMatri
 	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
-
 	Core::DrawContext(context);
 	glUseProgram(0);
 }
@@ -70,16 +100,13 @@ void drawObject(GLuint program,Core::RenderContext context, glm::mat4 modelMatri
 void renderScene()
 {
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-	cameraMatrix = createCameraMatrix();
-	perspectiveMatrix = Core::createPerspectiveMatrix();
-
+	cameraMatrix = Core::createViewMatrix(glm::vec3(cameraPos.x + 0.4f,cameraPos.y,cameraPos.z), cameraPos + cameraFront, glm::vec3(0, 1, 0));
+	perspectiveMatrix = glm::perspectiveFov(45.f, 1280.0f, 720.0f, 0.01f, 100.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
-
-
 	glm::mat4 shipModelMatrix =
-        glm::translate(cameraPos + cameraDir * 0.5f + glm::vec3(0,-0.25f,0))
-        * glm::rotate(-cameraAngle + glm::radians(90.0f), glm::vec3(0,1,0))
+		glm::translate(glm::vec3(cameraPos.x +  cameraFront.x,cameraPos.y + cameraFront.y,cameraPos.z + cameraFront.z))
+        * glm::rotate((glm::radians(-yaw) + glm::radians(90.f)), glm::vec3(0,1,0)) * glm::rotate(glm::radians(-pitch), glm::vec3(1, 0, 0))
         * glm::scale(glm::vec3(0.25f));
 	glUseProgram(program); 
 	glUniform3f(glGetUniformLocation(program, "lightPos"),2,0,2);
@@ -92,7 +119,6 @@ void renderScene()
 	//Moon inits
 	drawObject(program, sphereContext, glm::translate(glm::vec3(2 + 3 * sinf(time) + 1.5 * sinf(2 * time), 0, 2 + 3 * cosf(time) + 1.5 * cosf(2 * time))) * glm::scale(glm::vec3(0.2, 0.2, 0.2)), glm::vec3(0.5f, 0.1f, 0.3f));
 	drawObject(program, sphereContext, glm::translate(glm::vec3(2 + 5 * cosf(time) + sinf(2 * time), 0, 2 + 5 * sinf(time) +cosf(2 * time))) * glm::scale(glm::vec3(0.2, 0.2, 0.2)), glm::vec3(0.9f, 0.9f, 0.7f));
-
 	glutSwapBuffers();
 }
 
@@ -106,6 +132,7 @@ void init()
 	sphereContext.initFromOBJ(sphereModel);
 }
 
+
 void shutdown()
 {
 	shaderLoader.DeleteProgram(program);
@@ -116,20 +143,22 @@ void idle()
 	glutPostRedisplay();
 }
 
+
 int main(int argc, char ** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(200, 200);
-	glutInitWindowSize(600, 600);
-	glutCreateWindow("OpenGL Pierwszy Program");
+	glutInitWindowSize(1280, 720);
+	glutCreateWindow("Quiver");
 	glewInit();
 
 	init();
 	glutKeyboardFunc(keyboard);
+	glutMotionFunc(mouse_callback);
+	glutPassiveMotionFunc(mouse_callback);
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);
-
 	glutMainLoop();
 
 	shutdown();
