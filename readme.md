@@ -1,1 +1,1 @@
-This is a project file.
+A 3D FPS game created in C++/OpenGL/PhysX.
