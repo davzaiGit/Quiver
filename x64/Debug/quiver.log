@@ -1,0 +1,113 @@
+﻿  Camera.cpp
+  main.cpp
+E:\Projekt\Quiver\src\objload.h(156,52): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(163,44): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(179,53): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(185,49): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(189,41): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(227,55): warning C4244: "inicjowanie": konwersja z "__int64" do "unsigned short", możliwa utrata danych
+E:\Projekt\Quiver\src\objload.h(227,40): warning C4244: "inicjowanie": konwersja z "__int64" do "const unsigned short", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(65,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(66,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+  Render_Utils.cpp
+E:\Projekt\Quiver\src\objload.h(156,52): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(163,44): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(179,53): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(185,49): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(189,41): warning C4267: "argument": konwersja z "size_t" do "_Ty", możliwa utrata danych
+          with
+          [
+              _Ty=unsigned int
+          ]
+E:\Projekt\Quiver\src\objload.h(227,55): warning C4244: "inicjowanie": konwersja z "__int64" do "unsigned short", możliwa utrata danych
+E:\Projekt\Quiver\src\objload.h(227,40): warning C4244: "inicjowanie": konwersja z "__int64" do "const unsigned short", możliwa utrata danych
+E:\Projekt\Quiver\src\Render_Utils.cpp(14,76): warning C4267: "inicjowanie": konwersja z "size_t" do "unsigned int", możliwa utrata danych
+E:\Projekt\Quiver\src\Render_Utils.cpp(15,78): warning C4267: "inicjowanie": konwersja z "size_t" do "unsigned int", możliwa utrata danych
+E:\Projekt\Quiver\src\Render_Utils.cpp(16,77): warning C4267: "inicjowanie": konwersja z "size_t" do "unsigned int", możliwa utrata danych
+E:\Projekt\Quiver\src\Render_Utils.cpp(18,41): warning C4267: "=": konwersja z "size_t" do "int", możliwa utrata danych
+E:\Projekt\Quiver\src\Render_Utils.cpp(46,85): warning C4312: "typ rzutowania": konwersja z "unsigned int" na "void *" jest większej wielkości
+E:\Projekt\Quiver\src\Render_Utils.cpp(47,110): warning C4312: "typ rzutowania": konwersja z "unsigned int" na "void *" jest większej wielkości
+  Shader_Loader.cpp
+E:\Projekt\Quiver\src\Shader_Loader.cpp(39,44): warning C4267: "inicjowanie": konwersja z "size_t" do "int", możliwa utrata danych
+E:\Projekt\Quiver\src\Shader_Loader.cpp(39,44): warning C4267: "inicjowanie": konwersja z "size_t" do "const int", możliwa utrata danych
+  Generowanie kodu...
+Camera.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glewInit przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutInitWindowPosition przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutInitWindowSize przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutInitDisplayMode przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutMainLoop przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutPostRedisplay przywołany w funkcji "void __cdecl idle(void)" (?idle@@YAXXZ)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutSwapBuffers przywołany w funkcji "void __cdecl renderScene(void)" (?renderScene@@YAXXZ)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutIdleFunc przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutKeyboardFunc przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutDisplayFunc przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutMotionFunc przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutPassiveMotionFunc przywołany w funkcji main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp_glutGet przywołany w funkcji "void __cdecl renderScene(void)" (?renderScene@@YAXXZ)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glutInitWithExit przywołany w funkcji glutInit_ATEXIT_HACK
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glutCreateWindowWithExit przywołany w funkcji glutCreateWindow_ATEXIT_HACK
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGetUniformLocation przywołany w funkcji "void __cdecl drawObject(unsigned int,struct Core::RenderContext,struct glm::tmat4x4<float,0>,struct glm::tvec3<float,0>)" (?drawObject@@YAXIURenderContext@Core@@U?$tmat4x4@M$0A@@glm@@U?$tvec3@M$0A@@4@@Z)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewUniform3f przywołany w funkcji "void __cdecl drawObject(unsigned int,struct Core::RenderContext,struct glm::tmat4x4<float,0>,struct glm::tvec3<float,0>)" (?drawObject@@YAXIURenderContext@Core@@U?$tmat4x4@M$0A@@glm@@U?$tvec3@M$0A@@4@@Z)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewUniformMatrix4fv przywołany w funkcji "void __cdecl drawObject(unsigned int,struct Core::RenderContext,struct glm::tmat4x4<float,0>,struct glm::tvec3<float,0>)" (?drawObject@@YAXIURenderContext@Core@@U?$tmat4x4@M$0A@@glm@@U?$tvec3@M$0A@@4@@Z)
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewUseProgram przywołany w funkcji "void __cdecl drawObject(unsigned int,struct Core::RenderContext,struct glm::tmat4x4<float,0>,struct glm::tvec3<float,0>)" (?drawObject@@YAXIURenderContext@Core@@U?$tmat4x4@M$0A@@glm@@U?$tvec3@M$0A@@4@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewBindBuffer przywołany w funkcji "public: void __cdecl Core::RenderContext::initFromOBJ(struct obj::Model &)" (?initFromOBJ@RenderContext@Core@@QEAAXAEAUModel@obj@@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewBufferData przywołany w funkcji "public: void __cdecl Core::RenderContext::initFromOBJ(struct obj::Model &)" (?initFromOBJ@RenderContext@Core@@QEAAXAEAUModel@obj@@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewBufferSubData przywołany w funkcji "public: void __cdecl Core::RenderContext::initFromOBJ(struct obj::Model &)" (?initFromOBJ@RenderContext@Core@@QEAAXAEAUModel@obj@@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGenBuffers przywołany w funkcji "public: void __cdecl Core::RenderContext::initFromOBJ(struct obj::Model &)" (?initFromOBJ@RenderContext@Core@@QEAAXAEAUModel@obj@@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewEnableVertexAttribArray przywołany w funkcji "void __cdecl Core::DrawVertexArray(struct Core::VertexData const &)" (?DrawVertexArray@Core@@YAXAEBUVertexData@1@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewVertexAttribPointer przywołany w funkcji "void __cdecl Core::DrawVertexArray(struct Core::VertexData const &)" (?DrawVertexArray@Core@@YAXAEBUVertexData@1@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewBindVertexArray przywołany w funkcji "void __cdecl Core::DrawContext(struct Core::RenderContext &)" (?DrawContext@Core@@YAXAEAURenderContext@1@@Z)
+Render_Utils.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGenVertexArrays przywołany w funkcji "public: void __cdecl Core::RenderContext::initFromOBJ(struct obj::Model &)" (?initFromOBJ@RenderContext@Core@@QEAAXAEAUModel@obj@@@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewAttachShader przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewCompileShader przywołany w funkcji "private: unsigned int __cdecl Core::Shader_Loader::CreateShader(unsigned int,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,char *)" (?CreateShader@Shader_Loader@Core@@AEAAIIV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAD@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewCreateProgram przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewCreateShader przywołany w funkcji "private: unsigned int __cdecl Core::Shader_Loader::CreateShader(unsigned int,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,char *)" (?CreateShader@Shader_Loader@Core@@AEAAIIV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAD@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewDeleteProgram przywołany w funkcji "public: void __cdecl Core::Shader_Loader::DeleteProgram(unsigned int)" (?DeleteProgram@Shader_Loader@Core@@QEAAXI@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewDeleteShader przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewDetachShader przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGetProgramInfoLog przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGetProgramiv przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGetShaderInfoLog przywołany w funkcji "private: unsigned int __cdecl Core::Shader_Loader::CreateShader(unsigned int,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,char *)" (?CreateShader@Shader_Loader@Core@@AEAAIIV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAD@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewGetShaderiv przywołany w funkcji "private: unsigned int __cdecl Core::Shader_Loader::CreateShader(unsigned int,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,char *)" (?CreateShader@Shader_Loader@Core@@AEAAIIV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAD@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewLinkProgram przywołany w funkcji "public: unsigned int __cdecl Core::Shader_Loader::CreateProgram(char *,char *)" (?CreateProgram@Shader_Loader@Core@@QEAAIPEAD0@Z)
+Shader_Loader.obj : error LNK2019: nierozpoznany symbol zewnętrzny __imp___glewShaderSource przywołany w funkcji "private: unsigned int __cdecl Core::Shader_Loader::CreateShader(unsigned int,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >,char *)" (?CreateShader@Shader_Loader@Core@@AEAAIIV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEAD@Z)
+E:\Projekt\Quiver\dependencies\freeglut\lib\freeglut.lib : warning LNK4272: wystąpił konflikt typu maszyny biblioteki „x86” z typem maszyny docelowej „x64”
+E:\Projekt\Quiver\dependencies\glew-2.0.0\lib\Release\Win32\glew32.lib : warning LNK4272: wystąpił konflikt typu maszyny biblioteki „x86” z typem maszyny docelowej „x64”
+E:\Projekt\Quiver\x64\Debug\quiver.exe : fatal error LNK1120: liczba nierozpoznanych elementów zewnętrznych: 40

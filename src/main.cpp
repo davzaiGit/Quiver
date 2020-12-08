@@ -8,18 +8,39 @@
 #include "Shader_Loader.h"
 #include "Render_Utils.h"
 #include "Camera.h"
+#include "PxPhysicsAPI.h"
+
 
 #include "Box.cpp"
+
+#define PVD_HOST "127.0.0.1"
+
 
 GLuint program;
 GLuint sunProgram;
 Core::Shader_Loader shaderLoader;
+
 
 obj::Model shipModel;
 obj::Model sphereModel;
 Core::RenderContext shipContext;
 Core::RenderContext sphereContext;
 
+
+static physx::PxDefaultErrorCallback gDefaultErrorCallback;
+static physx::PxDefaultAllocator gDefaultAllocatorCallback;
+
+physx::PxFoundation* gFoundation = NULL;
+physx::PxPhysics* gPhysics = NULL;
+physx::PxCooking* gCooking = NULL;
+
+physx::PxPvd* gPvd = NULL;
+
+physx::PxDefaultCpuDispatcher* gDispatcher = NULL;
+physx::PxScene* gScene = NULL;
+
+bool recordMemoryAllocations = true;
+	
 float yaw = 0.0f;
 float pitch = 0.0f;
 float cameraAngle = 0;
@@ -31,6 +52,8 @@ glm::vec3 cameraFront;
 glm::vec3 direction;
 glm::mat4 cameraMatrix, perspectiveMatrix;
 
+Core::Camera cam;
+
 glm::vec3 lightSource = glm::normalize(glm::vec3(0.0f, 0.0f, 3.0f));
 
 
@@ -40,16 +63,16 @@ void keyboard(unsigned char key, int x, int y)
 {
 	float angleSpeed = 0.1f;
 	float moveSpeed = 0.1f;
-	switch(key)
+	switch (key)
 	{
 	case 'z': cameraAngle -= angleSpeed; break;
 	case 'x': cameraAngle += angleSpeed; break;
-	case 'w': cameraPos += direction * moveSpeed; break;
-	case 's': cameraPos -= direction * moveSpeed; break;
-	case 'd': cameraPos += glm::cross(cameraDir, glm::vec3(0, 1, 0)) * moveSpeed; break;
-	case 'a': cameraPos -= glm::cross(cameraDir, glm::vec3(0, 1, 0)) * moveSpeed; break;
-	case 'e': cameraPos += glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeed; break;
-	case 'q': cameraPos -= glm::cross(cameraDir, glm::vec3(1, 0, 0)) * moveSpeed; break;
+	case 'w': cam.setPosition(cam.getPosition() + direction * moveSpeed); break;
+	case 's': cam.setPosition(cam.getPosition() - direction * moveSpeed); break;
+	case 'd': cam.setPosition(cam.getPosition() + (glm::cross(cam.getForward(), glm::vec3(0, 1, 0)) * moveSpeed)); break;
+	case 'a': cam.setPosition(cam.getPosition() - (glm::cross(cam.getForward(), glm::vec3(0, 1, 0)) * moveSpeed)); break;
+	case 'e': cam.setPosition(cam.getPosition() + (glm::cross(cam.getForward(), glm::vec3(1, 0, 0)) * moveSpeed)); break;
+	case 'q': cam.setPosition(cam.getPosition() - (glm::cross(cam.getForward(), glm::vec3(1, 0, 0)) * moveSpeed)); break;
 	}
 }
 
@@ -81,7 +104,7 @@ void mouse_callback(int x, int y)
 	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 	direction.y = sin(glm::radians(pitch));
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
+	cam.setFront(glm::normalize(direction));
 }
 
 
@@ -89,8 +112,8 @@ void drawObject(GLuint program,Core::RenderContext context, glm::mat4 modelMatri
 {
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
-	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
-	glm::mat4 transformation = perspectiveMatrix * cameraMatrix * modelMatrix;
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+	glm::mat4 transformation = cam.getPerspective() * cam.getView() * modelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	Core::DrawContext(context);
@@ -100,12 +123,11 @@ void drawObject(GLuint program,Core::RenderContext context, glm::mat4 modelMatri
 void renderScene()
 {
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-	cameraMatrix = Core::createViewMatrix(glm::vec3(cameraPos.x + 0.4f,cameraPos.y,cameraPos.z), cameraPos + cameraFront, glm::vec3(0, 1, 0));
-	perspectiveMatrix = glm::perspectiveFov(45.f, 1280.0f, 720.0f, 0.01f, 100.0f);
+	cam.update();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(cameraPos.x +  cameraFront.x,cameraPos.y + cameraFront.y,cameraPos.z + cameraFront.z))
+		glm::translate(glm::vec3(cam.getPosition() + cam.getFront() + glm::vec3(0.4,-0.1,0)))
         * glm::rotate((glm::radians(-yaw) + glm::radians(90.f)), glm::vec3(0,1,0)) * glm::rotate(glm::radians(-pitch), glm::vec3(1, 0, 0))
         * glm::scale(glm::vec3(0.25f));
 	glUseProgram(program); 
@@ -126,16 +148,29 @@ void init()
 {
 	glEnable(GL_DEPTH_TEST);
 	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
+	cam = Core::Camera(glm::vec3(-5, 0, 0), glm::vec3(0, 0, 0) );
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
 	shipContext.initFromOBJ(shipModel);
 	sphereContext.initFromOBJ(sphereModel);
+	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback,
+		gDefaultErrorCallback);
+	gPvd = PxCreatePvd(*gFoundation);
+	physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
+	gPvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
+
+
+
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation,
+		physx::PxTolerancesScale::PxTolerancesScale(), recordMemoryAllocations, gPvd);
 }
 
 
 void shutdown()
 {
 	shaderLoader.DeleteProgram(program);
+	gPhysics->release();
+	gFoundation->release();
 }
 
 void idle()
@@ -160,7 +195,6 @@ int main(int argc, char ** argv)
 	glutDisplayFunc(renderScene);
 	glutIdleFunc(idle);
 	glutMainLoop();
-
 	shutdown();
 
 	return 0;
