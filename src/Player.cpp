@@ -1,0 +1,34 @@
+#include "Player.h"
+#include <ext.hpp>
+
+
+
+Core::Player::Player(glm::vec3 pos,glm::vec3 fr,Core::RenderContext ctxt,int hth, int amm, int mag)
+{
+
+	position = glm::vec3(pos + fr + glm::vec3(0.4, -0.1, 0));
+	context = ctxt;
+	health = hth;
+	ammo = amm;
+	mags = mag;
+
+}
+
+void Core::Player::render(GLuint program,glm::vec3 color,Core::Camera cam,float yw,float ptch)
+{
+
+	position = glm::vec3(cam.getPosition() + cam.getFront() + glm::vec3(0.4, -0.1, 0));
+	glm::mat4 shipModelMatrix =
+		glm::translate(glm::vec3(position))
+		* glm::rotate((glm::radians(-yw) + glm::radians(90.f)), glm::vec3(0, 1, 0)) * glm::rotate(glm::radians(-ptch), glm::vec3(1, 0, 0))
+		* glm::scale(glm::vec3(0.25f));
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	Core::DrawContext(context);
+	glUseProgram(0);
+
+}

@@ -1,4 +1,11 @@
-﻿E:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(491,5): warning MSB8028: Katalog pośredni (Debug\) zawiera pliki udostępnione z innego projektu (grk-cw4.vcxproj). Może to spowodować niepoprawne zachowanie podczas oczyszczania i ponownej kompilacji.
-  Camera.cpp
+﻿  Camera.cpp
+  Controller.cpp
+  main.cpp
+E:\Projekt\Quiver\src\main.cpp(72,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(73,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+  Player.cpp
+  Render_Utils.cpp
+  Shader_Loader.cpp
+  Generowanie kodu...
 Camera.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
   quiver.vcxproj -> E:\Projekt\Quiver\Debug\quiver.exe

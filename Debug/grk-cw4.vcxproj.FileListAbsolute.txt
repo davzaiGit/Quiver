@@ -1,4 +1,0 @@
-C:\Users\davzai\Downloads\grk-cw4\grk-cw4\Debug\grk-cw4.exe
-C:\Users\davzai\Downloads\grk-cw4\grk-cw4\Debug\grk-cw4.pdb
-E:\Projekt\Quiver\Debug\quiver.exe
-E:\Projekt\Quiver\Debug\quiver.pdb
