@@ -47,6 +47,11 @@ void Core::RenderContext::initFromOBJ(obj::Model& model)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)(vertexNormalBufferSize + vertexDataBufferSize));
 }
 
+physx::PxVec3 Core::GlmToPxVec3(glm::vec3 in)
+{
+    return physx::PxVec3(in.x, in.y, in.z);
+}
+
 void Core::DrawVertexArray(const float * vertexArray, int numVertices, int elementSize )
 {
 	glVertexAttribPointer(0, elementSize, GL_FLOAT, false, 0, vertexArray);

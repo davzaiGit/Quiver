@@ -1,11 +1,5 @@
-﻿  Camera.cpp
-  Controller.cpp
-  main.cpp
-E:\Projekt\Quiver\src\main.cpp(72,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-E:\Projekt\Quiver\src\main.cpp(73,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-  Player.cpp
-  Render_Utils.cpp
-  Shader_Loader.cpp
-  Generowanie kodu...
-Camera.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
+﻿  main.cpp
+E:\Projekt\Quiver\src\main.cpp(80,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(81,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+Physics_Utils.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
   quiver.vcxproj -> E:\Projekt\Quiver\Debug\quiver.exe

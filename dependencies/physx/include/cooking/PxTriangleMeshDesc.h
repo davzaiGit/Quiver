@@ -87,7 +87,7 @@ public:
 	\brief Returns true if the descriptor is valid.
 	\return true if the current settings are valid
 	*/
-	PX_INLINE bool isValid() const;
+	PX_INLINE int isValid() const;
 };
 
 PX_INLINE PxTriangleMeshDesc::PxTriangleMeshDesc()	//constructor sets to default
@@ -100,15 +100,16 @@ PX_INLINE void PxTriangleMeshDesc::setToDefault()
 	*this = PxTriangleMeshDesc();
 }
 
-PX_INLINE bool PxTriangleMeshDesc::isValid() const
+PX_INLINE int PxTriangleMeshDesc::isValid() const
 {
-	if(points.count < 3) 	//at least 1 trig's worth of points
-		return false;
-	if ((!triangles.data) && (points.count%3))		// Non-indexed mesh => we must ensure the geometry defines an implicit number of triangles // i.e. numVertices can't be divided by 3
-		return false;
+	if (points.count < 3) 	//at least 1 trig's worth of points
+		return 1;
+	if ((!triangles.data) && (points.count%3))
+		// Non-indexed mesh => we must ensure the geometry defines an implicit number of triangles // i.e. numVertices can't be divided by 3
+		return 2;
 	//add more validity checks here
-	if (materialIndices.data && materialIndices.stride < sizeof(PxMaterialTableIndex))
-		return false;
+
+		return 2;
 	return PxSimpleTriangleMesh::isValid();
 }
 
