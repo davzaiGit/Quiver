@@ -15,6 +15,7 @@
 #include "Box.cpp"
 
 #define PVD_HOST "127.0.0.1"
+#define PX_RELEASE(x)	if(x)	{ x->release(); x = NULL;	}
 
 //OpenGL inits
 GLuint program;
@@ -24,6 +25,8 @@ obj::Model sphereModel;
 obj::Model shipModel;
 Core::RenderContext sphereContext;
 Core::RenderContext shipContext;
+
+
 //PhysX inits
 static physx::PxDefaultErrorCallback gErrorCallback;
 static physx::PxDefaultAllocator gAllocator;
@@ -35,11 +38,11 @@ physx::PxDefaultCpuDispatcher* gDispatcher = NULL;
 physx::PxScene* gScene = NULL;
 physx::PxMaterial* gMaterial = NULL;
 bool recordMemoryAllocations = true;
+physx::PxRigidDynamic* shipActor;
+physx::PxRigidDynamic* sunActor;
 
-physx::PxRigidDynamic* ball;
 
 
-#define PX_RELEASE(x)	if(x)	{ x->release(); x = NULL;	}
 
 //Entity intialization
 Core::Camera cam;
@@ -57,16 +60,19 @@ void keyboard(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
-		//case 'z': cameraAngle -= angleSpeed; break;
-		//case 'x': cameraAngle += angleSpeed; break;
-	case 'w': cam.setPosition(cam.getPosition() + controller.getDirection() * controller.getMoveSpeed()); break;
-	case 's': cam.setPosition(cam.getPosition() - controller.getDirection() * controller.getMoveSpeed()); break;
-	case 'd': cam.setPosition(cam.getPosition() + (glm::cross(cam.getForward(), glm::vec3(0, 1, 0)) * controller.getMoveSpeed())); break;
-	case 'a': cam.setPosition(cam.getPosition() - (glm::cross(cam.getForward(), glm::vec3(0, 1, 0)) * controller.getMoveSpeed())); break;
-	case 'e': cam.setPosition(cam.getPosition() + (glm::cross(cam.getForward(), glm::vec3(1, 0, 0)) * controller.getMoveSpeed())); break;
-	case 'q': cam.setPosition(cam.getPosition() - (glm::cross(cam.getForward(), glm::vec3(1, 0, 0)) * controller.getMoveSpeed())); break;
+	case 'w': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(cam.getFront()) * 0.6f); break;
+	case 's': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(cam.getFront()) * 0.5f); break;
+	case 'd': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 1.0f, 0.0f))) * 0.6f); break;
+	case 'a': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 1.0f, 0.0f))) * 0.6f); break;
+	case 'e': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 0.0f, 1.0f))) * 0.3f);; break;
+	case 'q': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 0.0f, 1.0f))) * 0.3f);; break;
 	}
 }
+
+
+
+//TODO:Pointer should go to the center of the window after leaving said window.
+
 
 void mouse_callback(int x, int y)
 {
@@ -81,11 +87,13 @@ void mouse_callback(int x, int y)
 	float yoffset = controller.getLastY() - y;
 	controller.setLastX(x);
 	controller.setLastY(y);
-	float sensitivity = 0.1f;
+	float sensitivity = 0.9f;
 	xoffset *= sensitivity;
 	yoffset *= sensitivity;
 	controller.setYaw(controller.getYaw() + xoffset);
 	controller.setPitch(controller.getPitch() + yoffset);
+	std::cout << controller.getPitch();
+	std::cout << "\n";
 	if (controller.getPitch() > 89.0f)
 		controller.setPitch(89.0f);
 	if (controller.getPitch() < -89.0f)
@@ -125,24 +133,23 @@ void initPhysics(bool interactive)
 	}
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
-	physx::PxRigidStatic* gPlane = physx::PxCreatePlane(*gPhysics, physx::PxPlane(0, 1, 0, 0), *gMaterial);
-	
-	gScene->addActor(*gPlane);
 }
 
-void stepPhysics(bool /*interactive*/)
+void stepPhysics(bool )
 {
 	gScene->simulate(1.0f / 60.0f);
-	physx::PxQuat kekw = physx::PxQuat(glm::radians(-controller.getYaw()) + glm::radians(90.f), physx::PxVec3(0.0f, 1.0f, 0.0f)) * physx::PxQuat(glm::radians(-controller.getPitch()), physx::PxVec3(1.0f, 0.0f, 0.0f));
-	ball->setGlobalPose(physx::PxTransform(player.getPositionPx(), kekw));
 	gScene->fetchResults(true);
+	physx::PxQuat kekw = physx::PxQuat(glm::radians(-controller.getYaw()) + glm::radians(90.f), physx::PxVec3(0.0f, 1.0f, 0.0f)) * physx::PxQuat(glm::radians(-controller.getPitch()), physx::PxVec3(1.0f, 0.0f, 0.0f));
+	cam.setPosition(player.getPosition() + controller.getDirection() * -1.f + glm::vec3(0, 0.25f, 0));
+	player.setPosition(shipActor->getGlobalPose().p);
+	planet1.setPosition(sunActor->getGlobalPose().p);
 }
 
 
 
 
 
-void cleanupPhysics(bool /*interactive*/)
+void cleanupPhysics(bool)
 {
 	PX_RELEASE(gScene);
 	PX_RELEASE(gDispatcher);
@@ -165,8 +172,6 @@ void renderScene()
 	stepPhysics(true);
 	//Camera update
 	cam.update();
-	physx::PxVec3 kek = physx::PxVec3(cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
-	//ball->setGlobalPose(physx::PxTransform(kek));
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
@@ -204,7 +209,7 @@ physx::PxRigidDynamic* createDynamic(const physx::PxTransform& t,obj::Model mod,
 
 	//Entity object inits
 
-	physx::PxRigidDynamic* dynamic = PxCreateDynamic(*gPhysics, t, physx::PxConvexMeshGeometry(convexMesh) , *gMaterial, 10.0f);
+	physx::PxRigidDynamic* dynamic = physx::PxCreateDynamic(*gPhysics, t, physx::PxConvexMeshGeometry(convexMesh) , *gMaterial,1.0f);
 	dynamic->setAngularDamping(0.5f);
 	dynamic->setLinearVelocity(velocity);
 	gScene->addActor(*dynamic);
@@ -221,26 +226,29 @@ void init()
 	cam = Core::Camera(glm::vec3(-5, 0, 0), glm::vec3(0, 0, 0));
 	controller = Core::Controller();
 
-	//Physics init
-	initPhysics(true);
-
 	//Asset loading
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
 	sphereContext.initFromOBJ(sphereModel);
 	shipContext.initFromOBJ(shipModel);
 
-	
+
+	//Object instantialization
 	player = Core::Player(shipModel.vertex, cam.getPosition(), cam.getFront(), shipContext, 100, 30, 3);
 	planet1 = Core::Planet(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2), 0.0f, 1.0f, 0.0f, sphereContext);
 	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2), 3.0f, 1.0f, 0.0f, sphereContext);
 	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2), 5.0f, 0.5f, 0.0f, sphereContext);
 	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2), 3.0f, 0.2f, 1.5f, sphereContext);
 	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2), 5.0f, 0.2f, 2.0f, sphereContext);
-	physx::PxVec3 kek = physx::PxVec3(cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 
-	//createDynamic(physx::PxTransform(kek), physx::PxBoxGeometry(physx::PxVec3(player.getDimensions().x/2,player.getDimensions().y/2,player.getDimensions().z/2)));
-	ball = createDynamic(physx::PxTransform(kek), shipModel);
+
+	//Physics inits
+	initPhysics(true);
+
+	shipActor = createDynamic(physx::PxTransform(player.getPositionPx()),shipModel);
+	shipActor->setLinearDamping(0.9f);
+	shipActor->setMaxLinearVelocity(3.5f);
+	sunActor = createDynamic(physx::PxTransform(planet1.getPositionPx()),sphereModel);
 
 	
 }
@@ -251,8 +259,7 @@ void init()
 void shutdown()
 {
 	shaderLoader.DeleteProgram(program);
-	gPhysics->release();
-	gFoundation->release();
+	cleanupPhysics(true);
 }
 
 void idle()

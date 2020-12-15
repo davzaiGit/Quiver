@@ -64,7 +64,6 @@ Core::Player::Player(std::vector<float> vert,glm::vec3 pos,glm::vec3 fr,Core::Re
 void Core::Player::render(GLuint program,glm::vec3 color,Core::Camera cam,float yw,float ptch)
 {
 
-	position = glm::vec3(cam.getPosition() + cam.getFront() + glm::vec3(0.4, -0.1, 0));
 	glm::mat4 shipModelMatrix =
 		glm::translate(glm::vec3(position))
 		* glm::rotate((glm::radians(-yw) + glm::radians(90.f)), glm::vec3(0, 1, 0)) * glm::rotate(glm::radians(-ptch), glm::vec3(1, 0, 0))

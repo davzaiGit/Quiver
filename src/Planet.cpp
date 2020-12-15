@@ -28,3 +28,54 @@ void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 	Core::DrawContext(context);
 	glUseProgram(0);
 }
+
+glm::vec3 Core::Planet::getPosition()
+{
+	return position;
+}
+
+void Core::Planet::setPosition(glm::vec3 in)
+{
+	position = in;
+
+}
+
+physx::PxVec3 Core::Planet::getPositionPx()
+{
+	return physx::PxVec3(position.x,position.y,position.z);
+}
+
+void Core::Planet::setPosition(physx::PxVec3 in)
+{
+	position = glm::vec3(in.x, in.y, in.z);
+}
+
+float Core::Planet::getDistance()
+{
+	return distance;
+}
+
+void Core::Planet::setDistance(float in)
+{
+	distance = in;
+}
+
+float Core::Planet::getMoonDistance()
+{
+	return moonDistance;
+}
+
+void Core::Planet::setMoonDistance(float in)
+{
+	moonDistance = in;
+}
+
+float Core::Planet::getScale()
+{
+	return scale;
+}
+
+void Core::Planet::setScale(float in)
+{
+	scale = in;
+}
