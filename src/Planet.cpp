@@ -1,23 +1,45 @@
 #include "Planet.h"
+#include "Texture.h"
 #include <ext.hpp>
 #include "PxPhysicsAPI.h"
 
 
 
-Core::Planet::Planet(glm::vec3 col,glm::vec3 pos, float dist, float sc, float md, Core::RenderContext& ctxt)
+Core::Planet::Planet(bool)
+{
+}
+
+Core::Planet::Planet(glm::vec3 pos, glm::vec3 col, float sc, Core::RenderContext& ctxt)
+{
+	color = col;
+	moonDistance = 0.0f;
+	distance = 0.0f;
+	scale = sc;
+	speed = 1.0f;
+	origin = pos;
+	positionOffsetAngle = 0.0f;
+	context = ctxt;
+}
+
+
+
+Core::Planet::Planet(glm::vec3 col,glm::vec3 pos,float poa,float sp, float dist, float sc, float md, Core::RenderContext& ctxt)
 {
 	color = col;
 	moonDistance = md;
 	distance = dist;
 	scale = sc;
-	position = pos;
+	speed = sp;
+	origin = pos;
+	positionOffsetAngle = poa;
+	position = glm::vec3(pos.x + dist * sinf(poa) + md * sinf(poa), pos.y, pos.z + dist * cosf(poa) + md * cosf(poa));
 	context = ctxt;
 }
 
 void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 {
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(position.x + distance * sinf(time) + moonDistance * sinf(time),position.y,position.z + distance * cosf(time) + moonDistance * cosf(time)))
+		glm::translate(glm::vec3(origin.x + distance * sinf(positionOffsetAngle + time * speed) + moonDistance * sinf(positionOffsetAngle + time * speed),origin.y,origin.z + distance * cosf(positionOffsetAngle + time * speed) + moonDistance * cosf(positionOffsetAngle + time * speed))) * glm::rotate(glm::radians(time),glm::vec3(0.0f,1.0f,0.0f))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
@@ -28,6 +50,25 @@ void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 	Core::DrawContext(context);
 	glUseProgram(0);
 }
+
+void Core::Planet::renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate)
+{
+	glm::mat4 shipModelMatrix =
+		glm::translate(glm::vec3(origin.x + distance * sinf(time) + moonDistance * sinf(time), origin.y, origin.z + distance * cosf(time) + moonDistance * cosf(time))) * glm::rotate(glm::radians(rotate * time), glm::vec3(0.0f, 1.0f, 0.0f))
+		* glm::scale(glm::vec3(scale));
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	Core::SetActiveTexture(tex, "texCoord", program, 0);
+	Core::DrawContext(context);
+	glUseProgram(0);
+}
+
+
+
+
 
 glm::vec3 Core::Planet::getPosition()
 {

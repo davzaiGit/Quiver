@@ -8,6 +8,7 @@
 #include "Shader_Loader.h"
 #include "Render_Utils.h"
 #include "Camera.h"
+#include "Texture.h"
 #include "Controller.h"
 #include "PxPhysicsAPI.h"
 #include "Player.h"
@@ -20,12 +21,21 @@
 //OpenGL inits
 GLuint program;
 GLuint sunProgram;
+GLuint skyboxProgram;
+
+
+GLuint skyboxTex;
+GLuint sunTex;
+
+
 Core::Shader_Loader shaderLoader;
 obj::Model sphereModel;
 obj::Model shipModel;
+obj::Model skyBoxModel;
+
 Core::RenderContext sphereContext;
 Core::RenderContext shipContext;
-
+Core::RenderContext skyBoxContext;
 
 //PhysX inits
 static physx::PxDefaultErrorCallback gErrorCallback;
@@ -39,7 +49,7 @@ physx::PxScene* gScene = NULL;
 physx::PxMaterial* gMaterial = NULL;
 bool recordMemoryAllocations = true;
 physx::PxRigidDynamic* shipActor;
-physx::PxRigidDynamic* sunActor;
+physx::PxRigidStatic* sunActor;
 
 
 
@@ -47,7 +57,12 @@ physx::PxRigidDynamic* sunActor;
 //Entity intialization
 Core::Camera cam;
 Core::Player player;
-Core::Planet planet1, planet2, planet3, planet4, planet5;
+Core::Planet skybox = Core::Planet(true);
+Core::Planet planet1 = Core::Planet(true);
+Core::Planet planet2 = Core::Planet(true);
+Core::Planet planet3 = Core::Planet(true);
+Core::Planet planet4 = Core::Planet(true);
+Core::Planet planet5 = Core::Planet(true);
 Core::Controller controller;
 
 
@@ -64,8 +79,8 @@ void keyboard(unsigned char key, int x, int y)
 	case 's': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(cam.getFront()) * 0.5f); break;
 	case 'd': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 1.0f, 0.0f))) * 0.6f); break;
 	case 'a': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 1.0f, 0.0f))) * 0.6f); break;
-	case 'e': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 0.0f, 1.0f))) * 0.3f);; break;
-	case 'q': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(glm::cross(cam.getFront(), glm::vec3(0.0f, 0.0f, 1.0f))) * 0.3f);; break;
+	case 'e': shipActor->setLinearVelocity(shipActor->getLinearVelocity() - Core::GlmToPxVec3(glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), cam.getFront())) * 0.3f);; break;
+	case 'q': shipActor->setLinearVelocity(shipActor->getLinearVelocity() + Core::GlmToPxVec3(glm::cross(glm::vec3(0.0f, 0.0f, 1.0f), cam.getFront())) * 0.3f);; break;
 	}
 }
 
@@ -143,6 +158,7 @@ void stepPhysics(bool )
 	cam.setPosition(player.getPosition() + controller.getDirection() * -1.f + glm::vec3(0, 0.25f, 0));
 	player.setPosition(shipActor->getGlobalPose().p);
 	planet1.setPosition(sunActor->getGlobalPose().p);
+	skybox.setPosition(player.getPosition());
 }
 
 
@@ -183,7 +199,8 @@ void renderScene()
 	player.render(program, glm::vec3(0.6f), cam, controller.getYaw(), controller.getPitch());
 
 	//Planet drawing
-	planet1.render(program, cam, time);
+	skybox.renderTexture(skyboxProgram,skyboxTex, cam, time,0.0f);
+	planet1.renderTexture(skyboxProgram,sunTex, cam, time,55.0f);
 	planet2.render(program, cam, time);
 	planet3.render(program, cam, time);
 	planet4.render(program, cam, time);
@@ -207,7 +224,6 @@ physx::PxRigidDynamic* createDynamic(const physx::PxTransform& t,obj::Model mod,
 	physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
 	physx::PxConvexMesh* convexMesh = gPhysics->createConvexMesh(input);
 
-	//Entity object inits
 
 	physx::PxRigidDynamic* dynamic = physx::PxCreateDynamic(*gPhysics, t, physx::PxConvexMeshGeometry(convexMesh) , *gMaterial,1.0f);
 	dynamic->setAngularDamping(0.5f);
@@ -216,12 +232,32 @@ physx::PxRigidDynamic* createDynamic(const physx::PxTransform& t,obj::Model mod,
 	return dynamic;
 }
 
+physx::PxRigidStatic* createStatic(const physx::PxTransform& t, obj::Model mod) {
+	physx::PxConvexMeshDesc convexDesc;
+	convexDesc.points.count = mod.vertex.size() / 3;
+	convexDesc.points.stride = 3 * sizeof(float);
+	convexDesc.points.data = &mod.vertex[0];
+	convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+	physx::PxDefaultMemoryOutputStream buf;
+	physx::PxConvexMeshCookingResult::Enum result;
+	gCooking->cookConvexMesh(convexDesc, buf, &result);
+	physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+	physx::PxConvexMesh* convexMesh = gPhysics->createConvexMesh(input);
+
+	physx::PxRigidStatic* stat = physx::PxCreateStatic(*gPhysics, t, physx::PxConvexMeshGeometry(convexMesh),*gMaterial);
+	gScene->addActor(*stat);
+	return stat;
+
+}
+
 
 void init()
 {
 	glEnable(GL_DEPTH_TEST);
 	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
-
+	//sunProgram = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
+	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	//Camera object loading
 	cam = Core::Camera(glm::vec3(-5, 0, 0), glm::vec3(0, 0, 0));
 	controller = Core::Controller();
@@ -229,17 +265,24 @@ void init()
 	//Asset loading
 	sphereModel = obj::loadModelFromFile("models/sphere.obj");
 	shipModel = obj::loadModelFromFile("models/spaceship.obj");
+	skyBoxModel = obj::loadModelFromFile("models/skyBoxCube.obj");
+	
+	skyboxTex = Core::LoadTexture("textures/Cube2.png");
+	sunTex = Core::LoadTexture("textures/papa.png");
+
 	sphereContext.initFromOBJ(sphereModel);
+	skyBoxContext.initFromOBJ(skyBoxModel);
 	shipContext.initFromOBJ(shipModel);
 
 
 	//Object instantialization
-	player = Core::Player(shipModel.vertex, cam.getPosition(), cam.getFront(), shipContext, 100, 30, 3);
-	planet1 = Core::Planet(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2), 0.0f, 1.0f, 0.0f, sphereContext);
-	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2), 3.0f, 1.0f, 0.0f, sphereContext);
-	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2), 5.0f, 0.5f, 0.0f, sphereContext);
-	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2), 3.0f, 0.2f, 1.5f, sphereContext);
-	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2), 5.0f, 0.2f, 2.0f, sphereContext);
+	player = Core::Player(shipModel.vertex, cam.getPosition(), cam.getFront(), shipContext, 90, 30, 3);
+	skybox = Core::Planet(player.getPosition(), glm::vec3(1.0f, 0.0f, 0.0f), 10000.0f, skyBoxContext);
+	planet1 = Core::Planet(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sphereContext);
+	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
+	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2),1.1f, 0.01f,203.0f, 10.0f, 0.0f, sphereContext);
+	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2),3.2f, 0.01f,293.0f, 17.0f, 0.0f, sphereContext);
+	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2),5.1f, 0.01f, 373.0f, 24.0f, 0.0f, sphereContext);
 
 
 	//Physics inits
@@ -248,7 +291,7 @@ void init()
 	shipActor = createDynamic(physx::PxTransform(player.getPositionPx()),shipModel);
 	shipActor->setLinearDamping(0.9f);
 	shipActor->setMaxLinearVelocity(3.5f);
-	sunActor = createDynamic(physx::PxTransform(planet1.getPositionPx()),sphereModel);
+	sunActor = createStatic(physx::PxTransform(planet1.getPositionPx()),sphereModel);
 
 	
 }

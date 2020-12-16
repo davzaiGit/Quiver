@@ -8,7 +8,7 @@ Core::Camera::Camera (glm::vec3 pos,glm::vec3 fr){
     front = fr;
     forward = pos + fr;
     createViewMatrix();
-    perspective = glm::perspectiveFov(45.f, 1280.0f, 720.0f, 0.01f, 100.0f);
+    perspective = glm::perspectiveFov(45.f, 1280.0f, 720.0f, 0.01f, 100000.0f);
 }
 
 

@@ -2,6 +2,7 @@
 
 #include "glew.h"
 #include "freeglut.h"
+#include "picopng.h"
 
 namespace Core
 {
