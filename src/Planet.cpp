@@ -11,6 +11,7 @@ Core::Planet::Planet(bool)
 
 Core::Planet::Planet(glm::vec3 pos, glm::vec3 col, float sc, Core::RenderContext& ctxt)
 {
+	type = "planet";
 	color = col;
 	moonDistance = 0.0f;
 	distance = 0.0f;
@@ -25,6 +26,7 @@ Core::Planet::Planet(glm::vec3 pos, glm::vec3 col, float sc, Core::RenderContext
 
 Core::Planet::Planet(glm::vec3 col,glm::vec3 pos,float poa,float sp, float dist, float sc, float md, Core::RenderContext& ctxt)
 {
+	type = "planet";
 	color = col;
 	moonDistance = md;
 	distance = dist;
@@ -38,8 +40,9 @@ Core::Planet::Planet(glm::vec3 col,glm::vec3 pos,float poa,float sp, float dist,
 
 void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 {
+	this->updatePhysics(time);
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(origin.x + distance * sinf(positionOffsetAngle + time * speed) + moonDistance * sinf(positionOffsetAngle + time * speed),origin.y,origin.z + distance * cosf(positionOffsetAngle + time * speed) + moonDistance * cosf(positionOffsetAngle + time * speed))) * glm::rotate(glm::radians(time),glm::vec3(0.0f,1.0f,0.0f))
+		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time),glm::vec3(0.0f,1.0f,0.0f))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
@@ -119,4 +122,23 @@ float Core::Planet::getScale()
 void Core::Planet::setScale(float in)
 {
 	scale = in;
+}
+
+void Core::Planet::setActor(physx::PxRigidDynamic* act)
+{
+	actor = act;
+	actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, true);
+	actor->setDominanceGroup(1);
+	actor->userData = &this->type;
+	actor->setContactReportThreshold(1000.0f);
+}
+
+physx::PxRigidDynamic* Core::Planet::getActor()
+{
+	return actor;
+}
+
+void Core::Planet::updatePhysics(float time)
+{
+	actor->setKinematicTarget(physx::PxTransform(origin.x + distance * sinf(positionOffsetAngle + time * speed) + moonDistance * sinf(positionOffsetAngle + time * speed), origin.y, origin.z + distance * cosf(positionOffsetAngle + time * speed) + moonDistance * cosf(positionOffsetAngle + time * speed)));
 }

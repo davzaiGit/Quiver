@@ -4,6 +4,7 @@
 #include "Render_Utils.h"
 #include "Camera.h"
 #include "Texture.h"
+#include "PxPhysicsAPI.h"
 
 
 namespace Core
@@ -15,13 +16,16 @@ namespace Core
 		glm::vec3 position;
 		glm::vec3 dimensions;
 		glm::vec3 color;
+		
 		float positionOffsetAngle;
 		float distance;
 		float moonDistance;
 		float scale;
 		float speed;
 		Core::RenderContext context;
+		physx::PxRigidDynamic* actor;
 	public:
+		std::string type;
 		Planet(bool);
 		Planet(glm::vec3 pos = glm::vec3(0, 0, 0),glm::vec3 col = glm::vec3(0, 0, 0),float sc = 1.0f,Core::RenderContext& ctxt = Core::RenderContext());
 		Planet(glm::vec3 col = glm::vec3(0, 0, 0), glm::vec3 pos = glm::vec3(0, 0, 0),float poa = 0.0f, float sp = 1.0f, float distance = 0.0f, float sc = 1.0f, float md = 0.0f, Core::RenderContext& ctxt = Core::RenderContext());
@@ -37,5 +41,8 @@ namespace Core
 		void setMoonDistance(float in);
 		float getScale();
 		void setScale(float in);
+		void setActor(physx::PxRigidDynamic* act);
+		physx::PxRigidDynamic* getActor();
+		void updatePhysics(float time);
 	};
 }

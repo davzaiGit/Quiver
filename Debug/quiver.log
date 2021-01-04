@@ -1,5 +1,10 @@
 ﻿  main.cpp
-E:\Projekt\Quiver\src\main.cpp(101,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-E:\Projekt\Quiver\src\main.cpp(102,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-Camera.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
+E:\Projekt\Quiver\src\main.cpp(171,41): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(173,41): warning C4244: "argument": konwersja z "double" do "int", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(222,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(223,16): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(410,16): warning C4244: "inicjowanie": konwersja z "double" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(411,14): warning C4244: "inicjowanie": konwersja z "double" do "float", możliwa utrata danych
+E:\Projekt\Quiver\src\main.cpp(414,231): warning C4244: "argument": konwersja z "double" do "float", możliwa utrata danych
+Asteroid.obj : warning LNK4075: zignorowano opcję „/EDITANDCONTINUE” z powodu określenia opcji „/INCREMENTAL:NO”
   quiver.vcxproj -> E:\Projekt\Quiver\Debug\quiver.exe

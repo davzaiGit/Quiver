@@ -1,11 +1,15 @@
 e:\projekt\quiver\debug\vc142.pdb
 e:\projekt\quiver\debug\vc142.idb
-e:\projekt\quiver\debug\shader_loader.obj
 e:\projekt\quiver\debug\render_utils.obj
-e:\projekt\quiver\debug\player.obj
+e:\projekt\quiver\debug\planet.obj
 e:\projekt\quiver\debug\main.obj
+e:\projekt\quiver\debug\player.obj
+e:\projekt\quiver\debug\texture.obj
+e:\projekt\quiver\debug\shader_loader.obj
+e:\projekt\quiver\debug\picopng.obj
 e:\projekt\quiver\debug\controller.obj
 e:\projekt\quiver\debug\camera.obj
+e:\projekt\quiver\debug\asteroid.obj
 e:\projekt\quiver\debug\quiver.exe
 e:\projekt\quiver\debug\quiver.pdb
 e:\projekt\quiver\debug\quiver.tlog\cl.command.1.tlog

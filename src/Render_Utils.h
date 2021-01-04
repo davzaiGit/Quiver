@@ -3,6 +3,8 @@
 #include "glew.h"
 #include "objload.h"
 #include "PxPhysicsAPI.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -18,7 +20,24 @@ namespace Core
         void initFromOBJ(obj::Model& model);
 	};
 
+	struct Character {
+		unsigned int TextureID;
+		glm::ivec2   Size;      
+		glm::ivec2   Bearing;   
+		unsigned int Advance;   
+	};
+
+	struct TextContext {
+		FT_Library lib;
+		FT_Face fontFace;
+		std::map<GLchar, Core::Character> Characters;
+		unsigned int vao,vbo;
+
+		void initText();
+	};
+
 	physx::PxVec3 GlmToPxVec3(glm::vec3 in);
+	glm::vec3 PxVec3ToGlm(physx::PxVec3 in);
 	// vertexArray - jednowymiarowa tablica zawierajaca wartosci opisujace pozycje kolejnych wierzcholkow w jednym ciagu (x1, y1, z1, w1, x2, y2, z2, w2, ...)
 	// numVertices - liczba wierzcholkow do narysowania
 	// elementSize - liczba wartosci opisujacych pojedynczy wierzcholek (np. 3 gdy wierzcholek opisany jest trojka (x, y, z))
@@ -66,4 +85,9 @@ namespace Core
 	void DrawVertexArray(const VertexData & data);
 
 	void DrawContext(RenderContext& context);
+	
+	void RenderText(Core::TextContext& textContext,GLuint program, std::string text, float x, float y, float scale, glm::vec3 color);
+
+	void RenderHud(Core::TextContext& textContext, GLuint program, GLuint tex, float x, float y, float scale, glm::vec3 color);
+
 }
