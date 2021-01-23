@@ -21,6 +21,13 @@ vec2 blurTexCoords[11];
 void main()
 {
 	gl_Position = transformation * vec4(vertexPosition, 1.0);
+	interpNormal = vec3(model * vec4(vertexNormal,0.0f));
+	vecPos = vec3(model * vec4(vertexPosition,1.0f));
+	texCoord = vec2(vertexTexCoord.x,1-vertexTexCoord.y);
+}
+
+/*
+    gl_Position = transformation * vec4(vertexPosition, 1.0);
     vec3 centerTexCoords = vertexPosition * 0.5 + 0.5;
     texCoord = vec2(vertexTexCoord.x,1-vertexTexCoord.y);
     vecPos = vec3(model * vec4(vertexPosition,1.0f));
@@ -33,16 +40,10 @@ void main()
     for(int i=-5; i<=5; i++){
         blurTexCoords[i+5] = vec2(centerTexCoords.x + pixSize * i, centerTexCoords.y + pixSize * i);
     }
-    /*//vertical
+    /vertical
     for(int i=-5; i<=5; i++){
         y_blurTexCoords[i+5] = centerTexCoords + vec2(0.0, pixSize * i);
-    }*/
-}
-
-//standard
-/*
-	gl_Position = transformation * vec4(vertexPosition, 1.0);
-	interpNormal = vec3(model * vec4(vertexNormal,0.0f));
-	vecPos = vec3(model * vec4(vertexPosition,1.0f));
-	texCoord = vec2(vertexTexCoord.x,1-vertexTexCoord.y);
+    }
 */
+
+	

@@ -38,7 +38,6 @@ float quadVertices[] = { // vertex attributes for a quad that fills the entire s
 	 1.0f,  1.0f,  1.0f, 1.0f
 };
 
-unsigned int FBO;
 
 GLuint program;
 GLuint sunProgram;
@@ -46,8 +45,14 @@ GLuint skyboxProgram;
 GLuint textProgram;
 
 GLuint screenProgram;
+GLuint blurProgram;
 unsigned int quadVAO, quadVBO;
 unsigned int textureColorbuffer;
+unsigned int FBO;
+unsigned int rbo;
+unsigned int colorBuffers[2];
+unsigned int pingpongFBO[2];
+unsigned int pingpongColorbuffers[2];
 
 GLuint skyboxTex;
 GLuint sunTex;
@@ -429,7 +434,7 @@ void renderScene()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glEnable(GL_DEPTH_TEST);
-
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
@@ -481,38 +486,73 @@ void renderScene()
 
 	glUseProgram(screenProgram);
 	glBindVertexArray(quadVAO);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);	// use the color attachment texture as the texture of the quad plane
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glutSwapBuffers();
 }
 
-//Shader wyœwietlaj¹cy na obraz dzi³a poprawnie, w standarodwym framebufferze nic siê nie generuje, nie wyœwietla zawartoœæ fraebuffera
-
 
 void init()
 {
+	glEnable(GL_DEPTH_TEST);
+
+	blurProgram = shaderLoader.CreateProgram("shaders/blur_shader.vert", "shaders/blur_shader.frag");
 	screenProgram = shaderLoader.CreateProgram("shaders/screen_shader.vert", "shaders/screen_shader.frag");
 	sunProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/shader_sun.frag");
 	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
 	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
 	glUniform1i(glGetUniformLocation(screenProgram, "screenTexture"), 0);
+	glUniform1i(glGetUniformLocation(blurProgram, "image"), 0);
 
 	//creating framebuffer
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-	// create a color attachment texture
-	glGenTextures(1, &textureColorbuffer);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+	// create 2 floating point color buffers (1 for normal rendering, other for brightness threshold values)
+	glGenTextures(2, colorBuffers);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		// attach texture to framebuffer
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+	}
 
+	// create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
 
-	glEnable(GL_DEPTH_TEST);
+	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+
+	// ping-pong-framebuffer for blurring
+	glGenFramebuffers(2, pingpongFBO);
+	glGenTextures(2, pingpongColorbuffers);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+		// also check if framebuffers are complete (no need for depth buffer)
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			std::cout << "Framebuffer not complete!" << std::endl;
+	}
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
