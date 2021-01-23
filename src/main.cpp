@@ -16,6 +16,7 @@
 #include "PxPhysicsAPI.h"
 #include "Player.h"
 #include "Planet.h"
+#include "Sun.h"
 #include "Station.h"
 #include <ft2build.h>
 #include <list>
@@ -26,16 +27,31 @@
 
 
 //OpenGL inits
+float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	// positions   // texCoords
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	-1.0f, -1.0f,  0.0f, 0.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
 
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+	 1.0f,  1.0f,  1.0f, 1.0f
+};
+
+unsigned int FBO;
 
 GLuint program;
 GLuint sunProgram;
 GLuint skyboxProgram;
 GLuint textProgram;
 
+GLuint screenProgram;
+unsigned int quadVAO, quadVBO;
+unsigned int textureColorbuffer;
 
 GLuint skyboxTex;
 GLuint sunTex;
+GLuint sunTexHdr;
 GLuint hudTex;
 GLuint healthTex;
 GLuint ammoTex;
@@ -59,15 +75,18 @@ Core::RenderContext shipContext;
 Core::RenderContext skyBoxContext;
 Core::RenderContext asteroidContext;
 Core::RenderContext stationContext;
+Core::RenderContext sunContext;
 Core::TextContext textContext;
 
+int SCR_WIDTH = 1280;
+int SCR_HEIGHT = 720;
 
 //Entity intialization
 Core::Camera cam;
 Core::Player player;
 Core::Station station;
 Core::Planet skybox = Core::Planet(true);
-Core::Planet planet1 = Core::Planet(true);
+Core::Sun sun = Core::Sun(true);
 Core::Planet planet2 = Core::Planet(true);
 Core::Planet planet3 = Core::Planet(true);
 Core::Planet planet4 = Core::Planet(true);
@@ -179,13 +198,9 @@ class ContactReportCallback : public physx::PxSimulationEventCallback
 
 ContactReportCallback gContactReportCallback;
 
-
-
 //light source position
 glm::vec3 lightSource = glm::normalize(glm::vec3(0.0f, 0.0f, 3.0f));
 
-
- 
 void keyboard(unsigned char key, int x, int y)
 {
 	int mod = glutGetModifiers();
@@ -207,8 +222,6 @@ void keyboard(unsigned char key, int x, int y)
 	case 'e': player.getActor()->setAngularVelocity(physx::PxVec3(0, -1, 0) * 3.0); break;
 	}
 }
-
-
 
 
 void mouse_callback(int x, int y)
@@ -243,8 +256,6 @@ void mouse_callback(int x, int y)
 	);
 	cam.setFront(glm::normalize(controller.getDirection()));
 }
-
-
 
 
 //PhysX related functions
@@ -394,11 +405,7 @@ void cleanupPhysics(bool)
 	PX_RELEASE(gFoundation);
 }
 
-
-
-
 int lastTime = 0;
-
 
 void spawnAsteroids(float time) {
 	if ((int)floor(time) % 5 == 0 && lastTime != (int)floor(time)) {
@@ -419,6 +426,12 @@ void spawnAsteroids(float time) {
 
 void renderScene()
 {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glEnable(GL_DEPTH_TEST);
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 	stepPhysics(true,time);
 	spawnAsteroids(time);
@@ -430,9 +443,9 @@ void renderScene()
 	player.render(program, glm::vec3(0.6f), cam);
 	
 	//Planet drawing
-	skybox.renderTexture(skyboxProgram,skyboxTex, cam, time,0.0f);
+	skybox.renderTexture(skyboxProgram, skyboxTex, cam, time,0.0f);
 
-	planet1.renderTexture(skyboxProgram,sunTex, cam, time,55.0f);
+	sun.renderTexture(sunProgram, sunTex, sunTexHdr, cam, time,55.0f);
 	planet2.render(program, cam, time);
 	planet3.render(program, cam, time);
 	planet4.render(program, cam, time);
@@ -452,28 +465,70 @@ void renderScene()
 		
 	//HUD elements rendering
 
+
+
 	Core::RenderText(textContext,textProgram, std::string(std::to_string(player.getHealth())), 75.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, "Score: " + std::string(std::to_string(player.getScore())), 20.0f, 670.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, std::string(std::to_string(player.getAmmo())) + " / "  + std::string(std::to_string(player.getMags() * 30)), 1130.0f,25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderHud(textContext, textProgram, hudTex, 620, 340, 40.0f,glm::vec3(1.f,1.f,1.f));
 	Core::RenderHud(textContext, textProgram, healthTex, 25, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderHud(textContext, textProgram, ammoTex, 1080, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glUseProgram(screenProgram);
+	glBindVertexArray(quadVAO);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 	glutSwapBuffers();
 }
 
-
+//Shader wyœwietlaj¹cy na obraz dzi³a poprawnie, w standarodwym framebufferze nic siê nie generuje, nie wyœwietla zawartoœæ fraebuffera
 
 
 void init()
 {
+	screenProgram = shaderLoader.CreateProgram("shaders/screen_shader.vert", "shaders/screen_shader.frag");
+	sunProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/shader_sun.frag");
+	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
+	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
+	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
+	glUniform1i(glGetUniformLocation(screenProgram, "screenTexture"), 0);
+
+	//creating framebuffer
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+	// create a color attachment texture
+	glGenTextures(1, &textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//sunProgram = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
-	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
-	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
-	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
+	//init quad to display texture
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+
+
 	//Camera object loading
 	cam = Core::Camera(glm::vec3(-103, 0, 0), glm::vec3(0, 0, 0));
 	controller = Core::Controller();
@@ -488,24 +543,28 @@ void init()
 	skyBoxModel = obj::loadModelFromFile("models/skyBoxCube.obj");
 	stationModel = obj::loadModelFromFile("models/spacestation.obj");
 
-	skyboxTex = Core::LoadTexture("textures/Cube2.png");
-	sunTex = Core::LoadTexture("textures/papa.png");
-	hudTex = Core::LoadTexture("textures/kek.png");
-	healthTex = Core::LoadTexture("textures/health.png");
-	ammoTex = Core::LoadTexture("textures/ammo.png");
+	skyboxTex = Core::LoadTextureToFramebuffer("textures/Cube2.png");
+	hudTex = Core::LoadTextureToFramebuffer("textures/kek.png");
+	healthTex = Core::LoadTextureToFramebuffer("textures/health.png");
+	ammoTex = Core::LoadTextureToFramebuffer("textures/ammo.png");
+	sunTex = Core::LoadTextureToFramebuffer("textures/papa.png");
+	sunTexHdr = Core::LoadTextureToFramebuffer("textures/papa.png");
 
 	sphereContext.initFromOBJ(sphereModel);
 	skyBoxContext.initFromOBJ(skyBoxModel);
 	shipContext.initFromOBJ(shipModel);
 	asteroidContext.initFromOBJ(asteroidModel);
 	stationContext.initFromOBJ(stationModel);
+	sunContext.initFromOBJ(sphereModel);
 
 
 	//Object instantialization
 	player = Core::Player(shipModel.vertex, cam.getPosition(), cam.getFront(), shipContext, 100, 30, 3);
 	skybox = Core::Planet(player.getPosition(), glm::vec3(1.0f, 0.0f, 0.0f), 10000.0f, skyBoxContext);
 	station = Core::Station(glm::vec3(80, 0, -80), stationContext);
-	planet1 = Core::Planet(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sphereContext);
+//Suninit
+	sun = Core::Sun(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sunContext);
+
 	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
 	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2),1.1f, 0.01f,203.0f, 10.0f, 0.0f, sphereContext);
 	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2),3.2f, 0.01f,293.0f, 17.0f, 0.0f, sphereContext);
@@ -524,7 +583,7 @@ void init()
 	station.setActor(createDynamic(physx::PxTransform(station.getPositionPx()), stationMesh, station.getScale()));
 	station.setTrigger(createDynamic(physx::PxTransform(station.getPositionPx()), sphereMesh,15.0f,physx::PxU32(3),true));
 	player.setActor(createDynamic(physx::PxTransform(player.getPositionPx()), shipMesh,player.getScale(), physx::PxU32(2)));
-	planet1.setActor(createDynamic(physx::PxTransform(planet1.getPositionPx()), sphereMesh, planet1.getScale()));
+	sun.setActor(createDynamic(physx::PxTransform(sun.getPositionPx()), sphereMesh, sun.getScale()));
 	planet2.setActor(createDynamic(physx::PxTransform(planet2.getPositionPx()), sphereMesh, planet2.getScale()));
 	planet3.setActor(createDynamic(physx::PxTransform(planet3.getPositionPx()), sphereMesh, planet3.getScale()));
 	planet4.setActor(createDynamic(physx::PxTransform(planet4.getPositionPx()), sphereMesh, planet4.getScale()));
@@ -532,7 +591,9 @@ void init()
 	planet6.setActor(createDynamic(physx::PxTransform(planet6.getPositionPx()), sphereMesh, planet6.getScale()));
 	planet7.setActor(createDynamic(physx::PxTransform(planet7.getPositionPx()), sphereMesh, planet7.getScale()));
 
-	
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 }

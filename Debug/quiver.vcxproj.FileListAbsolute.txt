@@ -1,2 +1,2 @@
-E:\Projekt\Quiver\Debug\quiver.exe
-E:\Projekt\Quiver\Debug\quiver.pdb
+E:\Users\KSzostak\Documents\GitHub\Quiver\Debug\quiver.exe
+E:\Users\KSzostak\Documents\GitHub\Quiver\Debug\quiver.pdb

@@ -1,0 +1,17 @@
+﻿  Asteroid.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Bullet.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  main.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Planet.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Player.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Render_Utils.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Station.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Sun.cpp
+E:\Users\KSzostak\Documents\GitHub\Quiver\src\Render_Utils.h(5,10): fatal error C1083: Nie można otworzyć pliku dołącz: 'PxPhysicsAPI.h': No such file or directory
+  Texture.cpp
