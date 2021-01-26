@@ -11,10 +11,6 @@ out vec3 interpNormal;
 out vec3 vecPos;
 out vec2 texCoord;
 
-//blur
-//out vec2 y_blurTexCoords[11];
-//out vec2 x_blurTexCoords[11];
-
 float target = 20;
 vec2 blurTexCoords[11];
 

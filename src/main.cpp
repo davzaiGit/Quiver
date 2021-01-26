@@ -46,6 +46,8 @@ GLuint textProgram;
 
 GLuint screenProgram;
 GLuint blurProgram;
+GLuint bloomFinalProgram;
+GLuint lightProgram;
 unsigned int quadVAO, quadVBO;
 unsigned int textureColorbuffer;
 unsigned int FBO;
@@ -53,6 +55,8 @@ unsigned int rbo;
 unsigned int colorBuffers[2];
 unsigned int pingpongFBO[2];
 unsigned int pingpongColorbuffers[2];
+unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
 
 GLuint skyboxTex;
 GLuint sunTex;
@@ -429,6 +433,35 @@ void spawnAsteroids(float time) {
 	}
 }
 
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
+
+
+
 void renderScene()
 {
 
@@ -467,11 +500,9 @@ void renderScene()
 	for (std::list<Core::Bullet>::iterator iter = bullets.begin(); iter != bullets.end(); iter++) {
 		iter->render(program, cam, time);
 	}
-		
+
+
 	//HUD elements rendering
-
-
-
 	Core::RenderText(textContext,textProgram, std::string(std::to_string(player.getHealth())), 75.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, "Score: " + std::string(std::to_string(player.getScore())), 20.0f, 670.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, std::string(std::to_string(player.getAmmo())) + " / "  + std::string(std::to_string(player.getMags() * 30)), 1130.0f,25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
@@ -479,16 +510,48 @@ void renderScene()
 	Core::RenderHud(textContext, textProgram, healthTex, 25, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderHud(textContext, textProgram, ammoTex, 1080, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
 
+	//bloom light render
+	glUseProgram(lightProgram);
+	glm::mat4 projection = cam.getPerspective();
+	glm::mat4 view = cam.getView();
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(lightSource));
+	model = glm::scale(model, glm::vec3(0.25f));
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "projection"), sizeof(projection), GL_FALSE, &projection[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "view"), sizeof(view), GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "model"), sizeof(lightSource), GL_FALSE, &model[0][0]);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	bool horizontal = true, first_iteration = true;
+	unsigned int amount = 10;
+	glUseProgram(blurProgram);
+	for (unsigned int i = 0; i < amount; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+		glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+		//renderQuad();
+		horizontal = !horizontal;
+		if (first_iteration)
+			first_iteration = false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glDisable(GL_DEPTH_TEST);
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glUseProgram(screenProgram);
+	glUseProgram(bloomFinalProgram);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+	
 	glBindVertexArray(quadVAO);
-	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);	// use the color attachment texture as the texture of the quad plane
+	//glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);	// use the color attachment texture as the texture of the quad plane
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
+	
+	renderQuad();
 	glutSwapBuffers();
 }
 
@@ -498,13 +561,17 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 
 	blurProgram = shaderLoader.CreateProgram("shaders/blur_shader.vert", "shaders/blur_shader.frag");
+	lightProgram = shaderLoader.CreateProgram("shaders/lightBox_shader.vert", "shaders/lightBox_shader.frag");
 	screenProgram = shaderLoader.CreateProgram("shaders/screen_shader.vert", "shaders/screen_shader.frag");
 	sunProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/shader_sun.frag");
 	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
 	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
+	bloomFinalProgram = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
 	glUniform1i(glGetUniformLocation(screenProgram, "screenTexture"), 0);
 	glUniform1i(glGetUniformLocation(blurProgram, "image"), 0);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "scene"), 0);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "bloomBlur"), 1);
 
 	//creating framebuffer
 	glGenFramebuffers(1, &FBO);
@@ -532,8 +599,11 @@ void init()
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
 
 	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
-	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 	glDrawBuffers(2, attachments);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	// ping-pong-framebuffer for blurring
 	glGenFramebuffers(2, pingpongFBO);
@@ -673,3 +743,4 @@ int main(int argc, char ** argv)
 
 	return 0;
 }
+

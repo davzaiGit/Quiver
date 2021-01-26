@@ -11,9 +11,6 @@ in vec3 interpNormal;
 in vec3 vecPos;
 in vec2 texCoord;
 
-vec2 blurTexCoords[11];
-
-
 void main()
 {
 	vec4 textureColor = texture2D(hdrBuffer,texCoord);
