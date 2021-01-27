@@ -42,7 +42,7 @@ void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 {
 	this->updatePhysics(time);
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time),glm::vec3(0.0f,1.0f,0.0f))
+		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time), glm::vec3(0.0f, 1.0f, 0.0f))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);

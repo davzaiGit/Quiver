@@ -48,7 +48,8 @@ GLuint screenProgram;
 GLuint blurProgram;
 GLuint bloomFinalProgram;
 GLuint lightProgram;
-unsigned int quadVAO, quadVBO;
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
 unsigned int textureColorbuffer;
 unsigned int FBO;
 unsigned int rbo;
@@ -477,6 +478,7 @@ void renderScene()
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 	glUseProgram(program); 
 	glUniform3f(glGetUniformLocation(program, "lightPos"),2,0,2);
+	glUniform3f(glGetUniformLocation(program, "lightColor"), 0.0f, 0.0f, 15.0f);
 	//Player drawing
 	player.render(program, glm::vec3(0.6f), cam);
 	
@@ -521,16 +523,23 @@ void renderScene()
 	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "view"), sizeof(view), GL_FALSE, &view[0][0]);
 	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "model"), sizeof(lightSource), GL_FALSE, &model[0][0]);
 
+	//TODO: fix model uniforms to program
+	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), sizeof(projection), GL_FALSE, &projection[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(program, "view"), sizeof(view), GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), sizeof(lightSource), GL_FALSE, &model[0][0]);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	bool horizontal = true, first_iteration = true;
+	bool horizontal = true;
+	bool first_iteration = true;
 	unsigned int amount = 10;
 	glUseProgram(blurProgram);
 	for (unsigned int i = 0; i < amount; i++)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+		glUniform1i(glGetUniformLocation(blurProgram, "horizontal"), horizontal);
 		glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
-		//renderQuad();
+		renderQuad();
 		horizontal = !horizontal;
 		if (first_iteration)
 			first_iteration = false;
@@ -546,10 +555,8 @@ void renderScene()
 	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
-	
-	glBindVertexArray(quadVAO);
-	//glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);	// use the color attachment texture as the texture of the quad plane
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "bloom"), 1);
+	glUniform1f(glGetUniformLocation(bloomFinalProgram, "exposure"), 1);
 	
 	renderQuad();
 	glutSwapBuffers();
@@ -561,15 +568,22 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 
 	blurProgram = shaderLoader.CreateProgram("shaders/blur_shader.vert", "shaders/blur_shader.frag");
-	lightProgram = shaderLoader.CreateProgram("shaders/lightBox_shader.vert", "shaders/lightBox_shader.frag");
-	screenProgram = shaderLoader.CreateProgram("shaders/screen_shader.vert", "shaders/screen_shader.frag");
+	program = shaderLoader.CreateProgram("shaders/main_shader.vert", "shaders/main_shader.frag");
+	lightProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/lightBox_shader.frag");
 	sunProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/shader_sun.frag");
-	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
 	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
 	bloomFinalProgram = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
-	glUniform1i(glGetUniformLocation(screenProgram, "screenTexture"), 0);
+	
+	//testy program
+	glUseProgram(program);
+	glUniform1i(glGetUniformLocation(program, "diffuseTexture"), 0);
+
+
+	glUseProgram(blurProgram);
 	glUniform1i(glGetUniformLocation(blurProgram, "image"), 0);
+
+	glUseProgram(bloomFinalProgram);
 	glUniform1i(glGetUniformLocation(bloomFinalProgram, "scene"), 0);
 	glUniform1i(glGetUniformLocation(bloomFinalProgram, "bloomBlur"), 1);
 
@@ -626,6 +640,7 @@ void init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	/*
 	//init quad to display texture
 	glGenVertexArrays(1, &quadVAO);
 	glGenBuffers(1, &quadVBO);
@@ -636,7 +651,7 @@ void init()
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
+	*/
 
 
 	//Camera object loading

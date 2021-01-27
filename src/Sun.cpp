@@ -64,7 +64,7 @@ void Core::Sun::renderTexture(GLuint program, GLuint tex, GLuint texHdr, Core::C
 	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
-	Core::SetSunTexture(tex, "texCoord", program, 0);
+	Core::SetActiveTexture(tex, "texCoord", program, 0);
 	Core::DrawContext(context);
 	glUseProgram(0);
 }
