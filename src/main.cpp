@@ -38,6 +38,7 @@ GLuint screenProgram;
 GLuint blurProgram;
 GLuint bloomFinalProgram;
 GLuint lightProgram;
+GLuint playerProgram;
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
 unsigned int textureColorbuffer;
@@ -54,7 +55,6 @@ GLuint hudTex;
 GLuint healthTex;
 GLuint ammoTex;
 GLuint spaceShipTex;
-
 GLuint planet2Tex;
 GLuint planet3Tex;
 GLuint planet4Tex;
@@ -63,6 +63,7 @@ GLuint planet6Tex;
 GLuint planet7Tex;
 GLuint asteroidTex;
 GLuint asteroidTex_normal;
+glm::vec3 lightPos2;
 
 // GLuint planet8Tex;
 
@@ -478,11 +479,20 @@ void renderScene()
 	spawnAsteroids(time);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
-	glUseProgram(program); 
+	lightPos2 = Core::PxVec3ToGlm(player.getActor()->getGlobalPose().p);
+
+	glUseProgram(programTex);
+	glUniform3f(glGetUniformLocation(programTex, "lightPos2"), lightPos2.x, lightPos2.y, lightPos2.z);
+	glUniform3f(glGetUniformLocation(programTex, "lightPos"), 2, 0, 2);
+	glUseProgram(programTex2);
+	glUniform3f(glGetUniformLocation(programTex2, "lightDir2"), lightPos2.x, lightPos2.y, lightPos2.z);
+	glUniform3f(glGetUniformLocation(programTex2, "lightDir"), 2, 0, 2);
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "lightPos2"), lightPos2.x, lightPos2.y, lightPos2.z);
 	glUniform3f(glGetUniformLocation(program, "lightPos"),2,0,2);
 	glUniform3f(glGetUniformLocation(program, "lightColor"), 0.0f, 0.0f, 15.0f);
 	//Player drawing
-	player.render(programTex, spaceShipTex, glm::vec3(0.6f), cam);
+	player.render(playerProgram, spaceShipTex, glm::vec3(0.6f), cam);
 	
 	//Planet drawing
 	skybox.renderSkybox(skyboxProgram, skyboxTex, cam, time,0.0f);
@@ -496,7 +506,7 @@ void renderScene()
 	planet5.renderTexture(programTex, planet5Tex, cam, time, 0.0f);
 	planet6.renderTexture(programTex, planet6Tex, cam, time, 0.0f);
 	planet7.renderTexture(programTex, planet7Tex, cam, time, 0.0f);
-	// planet8.renderTextureMoon(programTex, planet7Tex, cam, time, 0.0f);
+	planet8.renderTextureMoon(programTex, sunTex, cam, time, 0.0f,planet2.getActor()->getGlobalPose().p);
 
 	station.renderTexture(programTex, spaceStationTex, cam, time, 0.0f);
 	
@@ -580,6 +590,7 @@ void init()
 	bloomFinalProgram = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
 	programTex = shaderLoader.CreateProgram("shaders/shader_texture.vert", "shaders/shader_texture.frag");
 	programTex2 = shaderLoader.CreateProgram("shaders/shader_tex2.vert", "shaders/shader_tex2.frag");
+	playerProgram = shaderLoader.CreateProgram("shaders/shader_player.vert", "shaders/shader_player.frag");
 
 
 	//testy program
@@ -696,13 +707,13 @@ void init()
 	station = Core::Station(glm::vec3(80, 0, -80), stationContext);
 //Suninit
 	sun = Core::Sun(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sunContext);
-	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 13.0f, sphereContext);
+	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
 	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2),1.1f, 0.01f,203.0f, 10.0f, 0.0f, sphereContext);
 	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2),3.2f, 0.01f,293.0f, 17.0f, 0.0f, sphereContext);
 	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2),5.1f, 0.01f, 373.0f, 24.0f, 0.0f, sphereContext);
 	planet6 = Core::Planet(glm::vec3(0.4f, 0.2f, 0.3f), glm::vec3(2, 0, 2), 4.0f, 0.01f, 421.0f, 18.0f, 0.0f, sphereContext);
 	planet7 = Core::Planet(glm::vec3(0.1f, 0.0f, 0.5f), glm::vec3(2, 0, 2), 1.7f, 0.01f, 507.0f, 25.0f, 0.0f, sphereContext);
-// planet8 = Core::Planet(glm::vec3(0.1f, 0.0f, 0.5f), glm::vec3(2, 0, 2), 0.3f, 0.5f, 110.0f, 3.0f, 0.0f, sphereContext);
+	planet8 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 1.0f, 123.0f, 8.0f, 50.0f, sphereContext);
 
 	//Physics inits
 	initPhysics(true);
@@ -721,7 +732,7 @@ void init()
 	planet5.setActor(createDynamic(physx::PxTransform(planet5.getPositionPx()), sphereMesh, planet5.getScale()));
 	planet6.setActor(createDynamic(physx::PxTransform(planet6.getPositionPx()), sphereMesh, planet6.getScale()));
 	planet7.setActor(createDynamic(physx::PxTransform(planet7.getPositionPx()), sphereMesh, planet7.getScale()));
-// planet8.setActor(createDynamic(physx::PxTransform(planet8.getPositionPx()), sphereMesh, planet8.getScale()));
+	planet8.setActor(createDynamic(physx::PxTransform(planet8.getPositionPx()), sphereMesh, planet8.getScale()));
 	skybox.setActor(createDynamic(physx::PxTransform(skybox.getPositionPx()), cookMesh(skyBoxModel), skybox.getScale(), physx::PxU32(4), true));
 
 

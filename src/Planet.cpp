@@ -56,7 +56,7 @@ void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 
 void Core::Planet::renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate)
 {
-		this->updatePhysics(time);
+	this->updatePhysics(time);
 	glm::mat4 shipModelMatrix =
 				glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time), glm::vec3(0.0f, 1.0f, 0.0f))
 		* glm::scale(glm::vec3(scale));
@@ -86,11 +86,11 @@ void Core::Planet::renderSkybox(GLuint program, GLuint tex, Core::Camera cam, fl
 	glUseProgram(0);
 }
 
-void Core::Planet::renderTextureMoon(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate)
+void Core::Planet::renderTextureMoon(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate,physx::PxVec3 pos)
 {
-	this->updatePhysics(time);
+	this->updatePhysics(time,pos);
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z))  * glm::eulerAngleY(time / 2) * glm::eulerAngleXZ(time / 2, time / 2) * glm::eulerAngleY(time * 2)
+		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time), glm::vec3(0.0f, 1.0f, 0.0f))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
@@ -170,5 +170,12 @@ physx::PxRigidDynamic* Core::Planet::getActor()
 
 void Core::Planet::updatePhysics(float time)
 {
-	actor->setKinematicTarget(physx::PxTransform(origin.x + distance * sinf(positionOffsetAngle + time * speed) + moonDistance * sinf(positionOffsetAngle + time * speed), origin.y, origin.z + distance * cosf(positionOffsetAngle + time * speed) + moonDistance * cosf(positionOffsetAngle + time * speed)));
+	actor->setKinematicTarget(physx::PxTransform(origin.x + distance * sinf(positionOffsetAngle + time * speed) + moonDistance * cosf(positionOffsetAngle + time * speed), origin.y, origin.z + distance * cosf(positionOffsetAngle + time * speed) + moonDistance * sinf(positionOffsetAngle + time * speed)));
 }
+
+void Core::Planet::updatePhysics(float time,physx::PxVec3 pos)
+{
+	actor->setKinematicTarget(physx::PxTransform(pos.x + moonDistance * cosf(time * speed), pos.y, pos.z + moonDistance * sinf(time * speed)));
+}
+
+

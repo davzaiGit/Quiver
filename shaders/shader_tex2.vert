@@ -8,13 +8,14 @@ layout(location = 4) in vec3 vertexBitangent;
 
 uniform mat4 modelViewProjectionMatrix;
 uniform mat4 modelMatrix;
-
+uniform vec3 lightDir2;
 uniform vec3 lightDir;
 uniform vec3 cameraPos;
 
 out vec3 lightDirTS;
 out vec2 interpTexCoord;
 out vec3 viewDirTS;
+out vec3 lightDirTS2;
 
 void main()
 {
@@ -28,6 +29,7 @@ void main()
 	vec3 viewDir = normalize(cameraPos - vertPos);
 
 	lightDirTS = TBN * lightDir;
+	lightDirTS2 = TBN * lightDir2;
 	viewDirTS = TBN * viewDir;
 
 	gl_Position = modelViewProjectionMatrix * vec4(vertexPosition, 1.0);

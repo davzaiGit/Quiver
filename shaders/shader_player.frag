@@ -4,29 +4,18 @@ layout (location = 1) out vec4 BrightColor;
 
 uniform sampler2D colorTexture;
 uniform vec3 lightPos;
-uniform vec3 lightPos2;
 uniform vec3 cameraPos;
 
 in vec3 interpNormal;
 in vec3 vecPos;
 in vec2 vertexTexC;
 
-vec3 lp;
+vec3 lighting = vec3(0.0, 0.0, 0.0);
 
 void main()
 {
-	vec3 lighting = vec3(0.0);
 
-    for(int i = 0; i <= 1; i++)
-    {
-		if(i == 0){
-			lp = lightPos;
-			}
-		else{
-			lp = lightPos2;
-		}
-
-	vec3 lightDir = normalize(lp - vecPos);
+	vec3 lightDir = normalize(lightPos - vecPos);
 	vec3 V = normalize(cameraPos-vecPos);
 	vec3 normal = normalize(interpNormal);
 	vec3 R = reflect(-lightDir,normal);
@@ -36,7 +25,7 @@ void main()
 	float ambient = 0.1;
 
 	lighting = diffuse + vec3(1) * specular, 1.0 - ambient;
-	}
+	
 
 	vec2 vertexTexC_fixed = vec2(vertexTexC.x, 1 - vertexTexC.y);
 	vec4 textureColor = texture2D(colorTexture, vertexTexC_fixed);
