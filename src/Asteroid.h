@@ -24,7 +24,7 @@ namespace Core
 		Asteroid(bool);
 		Asteroid(glm::vec3 pos = glm::vec3(0, 0, 0),glm::vec3 col = glm::vec3(0, 0, 0),float sc = 1.0f,Core::RenderContext& ctxt = Core::RenderContext());
 		void render(GLuint program,Core::Camera cam,float time);
-		void renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate);
+		void renderTexture(GLuint program, GLuint tex, GLuint normalmapId, Core::Camera cam, float time, float rotate);
 		glm::vec3 getPosition();
 		void setPosition(glm::vec3 in);
 		physx::PxVec3 getPositionPx();

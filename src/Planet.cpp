@@ -16,7 +16,7 @@ Core::Planet::Planet(glm::vec3 pos, glm::vec3 col, float sc, Core::RenderContext
 	moonDistance = 0.0f;
 	distance = 0.0f;
 	scale = sc;
-	speed = 1.0f;
+	speed = 0.0f;
 	origin = pos;
 	positionOffsetAngle = 0.0f;
 	context = ctxt;
@@ -56,8 +56,9 @@ void Core::Planet::render(GLuint program,Core::Camera cam,float time)
 
 void Core::Planet::renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate)
 {
+		this->updatePhysics(time);
 	glm::mat4 shipModelMatrix =
-		glm::translate(glm::vec3(origin.x + distance * sinf(time) + moonDistance * sinf(time), origin.y, origin.z + distance * cosf(time) + moonDistance * cosf(time))) * glm::rotate(glm::radians(rotate * time), glm::vec3(0.0f, 1.0f, 0.0f))
+				glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::rotate(glm::radians(time), glm::vec3(0.0f, 1.0f, 0.0f))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
@@ -69,8 +70,37 @@ void Core::Planet::renderTexture(GLuint program,GLuint tex, Core::Camera cam, fl
 	glUseProgram(0);
 }
 
+void Core::Planet::renderSkybox(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate)
+{
+	this->updatePhysics(time);
+	glm::mat4 shipModelMatrix =
+		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z))
+		* glm::scale(glm::vec3(scale));
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	Core::SetActiveTexture(tex, "texCoord", program, 0);
+	Core::DrawContext(context);
+	glUseProgram(0);
+}
 
-
+void Core::Planet::renderTextureMoon(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate)
+{
+	this->updatePhysics(time);
+	glm::mat4 shipModelMatrix =
+		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z))  * glm::eulerAngleY(time / 2) * glm::eulerAngleXZ(time / 2, time / 2) * glm::eulerAngleY(time * 2)
+		* glm::scale(glm::vec3(scale));
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
+	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	Core::SetActiveTexture(tex, "texCoord", program, 0);
+	Core::DrawContext(context);
+	glUseProgram(0);
+}
 
 
 glm::vec3 Core::Planet::getPosition()

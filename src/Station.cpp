@@ -16,7 +16,7 @@ Core::Station::Station(glm::vec3 pos, Core::RenderContext& ctxt)
 }
 
 
-void Core::Station::render(GLuint program,Core::Camera cam,float time)
+void Core::Station::render(GLuint program, Core::Camera cam,float time)
 {
 	this->updatePhysics(time);
 	glm::mat4 shipModelMatrix =
@@ -49,9 +49,6 @@ void Core::Station::renderTexture(GLuint program,GLuint tex, Core::Camera cam, f
 }
 
 
-
-
-
 glm::vec3 Core::Station::getPosition()
 {
 	return position;
@@ -72,11 +69,6 @@ void Core::Station::setPosition(physx::PxVec3 in)
 {
 	position = glm::vec3(in.x, in.y, in.z);
 }
-
-
-
-
-
 
 
 void Core::Station::setActor(physx::PxRigidDynamic* act)

@@ -27,23 +27,13 @@
 
 
 //OpenGL inits
-float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	// positions   // texCoords
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	-1.0f, -1.0f,  0.0f, 0.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
-
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
-	 1.0f,  1.0f,  1.0f, 1.0f
-};
-
 
 GLuint program;
 GLuint sunProgram;
 GLuint skyboxProgram;
 GLuint textProgram;
-
+GLuint programTex;
+GLuint programTex2;
 GLuint screenProgram;
 GLuint blurProgram;
 GLuint bloomFinalProgram;
@@ -57,15 +47,26 @@ unsigned int colorBuffers[2];
 unsigned int pingpongFBO[2];
 unsigned int pingpongColorbuffers[2];
 unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-
-
 GLuint skyboxTex;
 GLuint sunTex;
 GLuint sunTexHdr;
 GLuint hudTex;
 GLuint healthTex;
 GLuint ammoTex;
+GLuint spaceShipTex;
 
+GLuint planet2Tex;
+GLuint planet3Tex;
+GLuint planet4Tex;
+GLuint planet5Tex;
+GLuint planet6Tex;
+GLuint planet7Tex;
+GLuint asteroidTex;
+GLuint asteroidTex_normal;
+
+// GLuint planet8Tex;
+
+GLuint spaceStationTex;
 
 Core::Shader_Loader shaderLoader;
 obj::Model sphereModel;
@@ -103,6 +104,7 @@ Core::Planet planet4 = Core::Planet(true);
 Core::Planet planet5 = Core::Planet(true);
 Core::Planet planet6 = Core::Planet(true);
 Core::Planet planet7 = Core::Planet(true);
+Core::Planet planet8 = Core::Planet(true);
 Core::Controller controller;
 
 std::list<Core::Asteroid> asteroids;
@@ -480,29 +482,31 @@ void renderScene()
 	glUniform3f(glGetUniformLocation(program, "lightPos"),2,0,2);
 	glUniform3f(glGetUniformLocation(program, "lightColor"), 0.0f, 0.0f, 15.0f);
 	//Player drawing
-	player.render(program, glm::vec3(0.6f), cam);
+	player.render(programTex, spaceShipTex, glm::vec3(0.6f), cam);
 	
 	//Planet drawing
-	skybox.renderTexture(skyboxProgram, skyboxTex, cam, time,0.0f);
+	skybox.renderSkybox(skyboxProgram, skyboxTex, cam, time,0.0f);
 
 	sun.renderTexture(sunProgram, sunTex, sunTexHdr, cam, time,55.0f);
-	planet2.render(program, cam, time);
-	planet3.render(program, cam, time);
-	planet4.render(program, cam, time);
-	planet5.render(program, cam, time);
-	planet6.render(program, cam, time);
-	planet7.render(program, cam, time);
-
-	station.render(program, cam, time);
 	
-	for (std::list<Core::Asteroid>::iterator iter = asteroids.begin(); iter != asteroids.end(); iter++) {
-		iter->render(program, cam, time);
+	// Planets
+	planet2.renderTexture(programTex, planet2Tex, cam, time, 0.0f);
+	planet3.renderTexture(programTex, planet3Tex, cam, time, 0.0f);
+	planet4.renderTexture(programTex, planet4Tex, cam, time, 0.0f);
+	planet5.renderTexture(programTex, planet5Tex, cam, time, 0.0f);
+	planet6.renderTexture(programTex, planet6Tex, cam, time, 0.0f);
+	planet7.renderTexture(programTex, planet7Tex, cam, time, 0.0f);
+	// planet8.renderTextureMoon(programTex, planet7Tex, cam, time, 0.0f);
+
+	station.renderTexture(programTex, spaceStationTex, cam, time, 0.0f);
+	
+for (std::list<Core::Asteroid>::iterator iter = asteroids.begin(); iter != asteroids.end(); iter++) {
+		iter->renderTexture(programTex2, asteroidTex, asteroidTex_normal, cam, time, 0.0f);
 	}
 
 	for (std::list<Core::Bullet>::iterator iter = bullets.begin(); iter != bullets.end(); iter++) {
 		iter->render(program, cam, time);
 	}
-
 
 	//HUD elements rendering
 	Core::RenderText(textContext,textProgram, std::string(std::to_string(player.getHealth())), 75.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
@@ -574,7 +578,10 @@ void init()
 	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
 	bloomFinalProgram = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
-	
+	programTex = shaderLoader.CreateProgram("shaders/shader_texture.vert", "shaders/shader_texture.frag");
+	programTex2 = shaderLoader.CreateProgram("shaders/shader_tex2.vert", "shaders/shader_tex2.frag");
+
+
 	//testy program
 	glUseProgram(program);
 	glUniform1i(glGetUniformLocation(program, "diffuseTexture"), 0);
@@ -640,18 +647,7 @@ void init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	/*
-	//init quad to display texture
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	*/
+
 
 
 	//Camera object loading
@@ -669,10 +665,21 @@ void init()
 	stationModel = obj::loadModelFromFile("models/spacestation.obj");
 
 	skyboxTex = Core::LoadTextureToFramebuffer("textures/Cube2.png");
+	sunTex = Core::LoadTextureToFramebuffer("textures/papa.png");
 	hudTex = Core::LoadTextureToFramebuffer("textures/kek.png");
 	healthTex = Core::LoadTextureToFramebuffer("textures/health.png");
 	ammoTex = Core::LoadTextureToFramebuffer("textures/ammo.png");
-	sunTex = Core::LoadTextureToFramebuffer("textures/papa.png");
+	spaceShipTex = Core::LoadTextureToFramebuffer("textures/spaceship.png");
+	asteroidTex = Core::LoadTextureToFramebuffer("textures/asteroid.png");
+	asteroidTex_normal = Core::LoadTextureToFramebuffer("textures/asteroid_normals.png");
+	planet2Tex = Core::LoadTextureToFramebuffer("textures/mars8k.png");
+	planet3Tex = Core::LoadTextureToFramebuffer("textures/haumea.png");
+	planet4Tex = Core::LoadTextureToFramebuffer("textures/jupiter8k.png");
+	planet5Tex = Core::LoadTextureToFramebuffer("textures/karsaw8k.png");
+	planet6Tex = Core::LoadTextureToFramebuffer("textures/neptune2k.png");
+	planet7Tex = Core::LoadTextureToFramebuffer("textures/saturn8k.png");
+	spaceStationTex = Core::LoadTextureToFramebuffer("textures/spaceStation.png");
+	
 	sunTexHdr = Core::LoadTextureToFramebuffer("textures/papa.png");
 
 	sphereContext.initFromOBJ(sphereModel);
@@ -689,14 +696,13 @@ void init()
 	station = Core::Station(glm::vec3(80, 0, -80), stationContext);
 //Suninit
 	sun = Core::Sun(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sunContext);
-
-	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
+	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 13.0f, sphereContext);
 	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2),1.1f, 0.01f,203.0f, 10.0f, 0.0f, sphereContext);
 	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2),3.2f, 0.01f,293.0f, 17.0f, 0.0f, sphereContext);
 	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2),5.1f, 0.01f, 373.0f, 24.0f, 0.0f, sphereContext);
 	planet6 = Core::Planet(glm::vec3(0.4f, 0.2f, 0.3f), glm::vec3(2, 0, 2), 4.0f, 0.01f, 421.0f, 18.0f, 0.0f, sphereContext);
 	planet7 = Core::Planet(glm::vec3(0.1f, 0.0f, 0.5f), glm::vec3(2, 0, 2), 1.7f, 0.01f, 507.0f, 25.0f, 0.0f, sphereContext);
-
+// planet8 = Core::Planet(glm::vec3(0.1f, 0.0f, 0.5f), glm::vec3(2, 0, 2), 0.3f, 0.5f, 110.0f, 3.0f, 0.0f, sphereContext);
 
 	//Physics inits
 	initPhysics(true);
@@ -715,6 +721,8 @@ void init()
 	planet5.setActor(createDynamic(physx::PxTransform(planet5.getPositionPx()), sphereMesh, planet5.getScale()));
 	planet6.setActor(createDynamic(physx::PxTransform(planet6.getPositionPx()), sphereMesh, planet6.getScale()));
 	planet7.setActor(createDynamic(physx::PxTransform(planet7.getPositionPx()), sphereMesh, planet7.getScale()));
+// planet8.setActor(createDynamic(physx::PxTransform(planet8.getPositionPx()), sphereMesh, planet8.getScale()));
+	skybox.setActor(createDynamic(physx::PxTransform(skybox.getPositionPx()), cookMesh(skyBoxModel), skybox.getScale(), physx::PxU32(4), true));
 
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -758,4 +766,3 @@ int main(int argc, char ** argv)
 
 	return 0;
 }
-
