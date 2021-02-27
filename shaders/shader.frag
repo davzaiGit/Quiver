@@ -1,14 +1,13 @@
 #version 430 core
 
 uniform vec3 objectColor;
-
 uniform vec3 lightPos;
+uniform vec3 cameraPos;
 
 in vec3 interpNormal;
-
 in vec3 vecPos;
 
-uniform vec3 cameraPos;
+
 
 void main()
 {

@@ -79,7 +79,7 @@ void Core::Player::render(GLuint program,glm::vec3 color,Core::Camera cam,float 
 
 }
 
-void Core::Player::render(GLuint program, glm::vec3 color, Core::Camera cam)
+void Core::Player::render(GLuint program, GLuint tex, glm::vec3 color, Core::Camera cam)
 {
 	updatePhysics();
 	position = glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z);
@@ -88,11 +88,12 @@ void Core::Player::render(GLuint program, glm::vec3 color, Core::Camera cam)
 		* glm::toMat4(glm::quat(actor->getGlobalPose().q.w, actor->getGlobalPose().q.x, actor->getGlobalPose().q.y, actor->getGlobalPose().q.z))
 		* glm::scale(glm::vec3(0.25f));
 	glUseProgram(program);
-	glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
+	//glUniform3f(glGetUniformLocation(program, "objectColor"), color.x, color.y, color.z);
 	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
 	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	Core::SetActiveTexture(tex, "texCoord", program, 0); 
 	Core::DrawContext(context);
 	glUseProgram(0);
 

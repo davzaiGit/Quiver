@@ -16,6 +16,7 @@
 #include "PxPhysicsAPI.h"
 #include "Player.h"
 #include "Planet.h"
+#include "Sun.h"
 #include "Station.h"
 #include <ft2build.h>
 #include <list>
@@ -27,19 +28,47 @@
 
 //OpenGL inits
 
-
 GLuint program;
 GLuint sunProgram;
 GLuint skyboxProgram;
 GLuint textProgram;
-
-
+GLuint programTex;
+GLuint programTex2;
+GLuint screenProgram;
+GLuint blurProgram;
+GLuint bloomFinalProgram;
+GLuint lightProgram;
+GLuint playerProgram;
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+unsigned int textureColorbuffer;
+unsigned int FBO;
+unsigned int rbo;
+unsigned int colorBuffers[2];
+unsigned int pingpongFBO[2];
+unsigned int pingpongColorbuffers[2];
+unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 GLuint skyboxTex;
 GLuint sunTex;
+GLuint sunTexHdr;
 GLuint hudTex;
 GLuint healthTex;
 GLuint ammoTex;
+GLuint spaceShipTex;
+GLuint planet2Tex;
+GLuint planet3Tex;
+GLuint planet4Tex;
+GLuint planet5Tex;
+GLuint planet6Tex;
+GLuint planet7Tex;
+GLuint planet8Tex;
+GLuint asteroidTex;
+GLuint asteroidTex_normal;
+glm::vec3 lightPos2;
 
+// GLuint planet8Tex;
+
+GLuint spaceStationTex;
 
 Core::Shader_Loader shaderLoader;
 obj::Model sphereModel;
@@ -59,21 +88,25 @@ Core::RenderContext shipContext;
 Core::RenderContext skyBoxContext;
 Core::RenderContext asteroidContext;
 Core::RenderContext stationContext;
+Core::RenderContext sunContext;
 Core::TextContext textContext;
 
+int SCR_WIDTH = 1280;
+int SCR_HEIGHT = 720;
 
 //Entity intialization
 Core::Camera cam;
 Core::Player player;
 Core::Station station;
 Core::Planet skybox = Core::Planet(true);
-Core::Planet planet1 = Core::Planet(true);
+Core::Sun sun = Core::Sun(true);
 Core::Planet planet2 = Core::Planet(true);
 Core::Planet planet3 = Core::Planet(true);
 Core::Planet planet4 = Core::Planet(true);
 Core::Planet planet5 = Core::Planet(true);
 Core::Planet planet6 = Core::Planet(true);
 Core::Planet planet7 = Core::Planet(true);
+Core::Planet planet8 = Core::Planet(true);
 Core::Controller controller;
 
 std::list<Core::Asteroid> asteroids;
@@ -179,13 +212,9 @@ class ContactReportCallback : public physx::PxSimulationEventCallback
 
 ContactReportCallback gContactReportCallback;
 
-
-
 //light source position
 glm::vec3 lightSource = glm::normalize(glm::vec3(0.0f, 0.0f, 3.0f));
 
-
- 
 void keyboard(unsigned char key, int x, int y)
 {
 	int mod = glutGetModifiers();
@@ -207,8 +236,6 @@ void keyboard(unsigned char key, int x, int y)
 	case 'e': player.getActor()->setAngularVelocity(physx::PxVec3(0, -1, 0) * 3.0); break;
 	}
 }
-
-
 
 
 void mouse_callback(int x, int y)
@@ -243,8 +270,6 @@ void mouse_callback(int x, int y)
 	);
 	cam.setFront(glm::normalize(controller.getDirection()));
 }
-
-
 
 
 //PhysX related functions
@@ -394,11 +419,7 @@ void cleanupPhysics(bool)
 	PX_RELEASE(gFoundation);
 }
 
-
-
-
 int lastTime = 0;
-
 
 void spawnAsteroids(float time) {
 	if ((int)floor(time) % 5 == 0 && lastTime != (int)floor(time)) {
@@ -417,63 +438,247 @@ void spawnAsteroids(float time) {
 	}
 }
 
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
+
+
+
 void renderScene()
 {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 	stepPhysics(true,time);
 	spawnAsteroids(time);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
-	glUseProgram(program); 
-	glUniform3f(glGetUniformLocation(program, "lightPos"),2,0,2);
+	glClearColor(0.0f, 0.1f, 0.1f, 0.1f);
+	lightPos2 = Core::PxVec3ToGlm(player.getActor()->getGlobalPose().p);
+
+	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "lightPos"), 2, 0, 2);
+	glUniform3f(glGetUniformLocation(program, "lightColor"), 0.0f, 0.0f, 15.0f);
+    glUniform3f(glGetUniformLocation(program, "lightPos2"), lightPos2.x, lightPos2.y, lightPos2.z);
+
+	glUseProgram(programTex);
+	glUniform3f(glGetUniformLocation(programTex, "lightPos2"), lightPos2.x, lightPos2.y, lightPos2.z);
+	glUniform3f(glGetUniformLocation(programTex, "lightPos"), 2, 0, 2);
+
+
+	glUniform3f(glGetUniformLocation(programTex, "position5"), lightPos2.x, lightPos2.y, lightPos2.z);
+
+	// light properties
+	glUniform3f(glGetUniformLocation(programTex, "ambient5"), 0.2f, 0.2f, 0.2f);
+	glUniform3f(glGetUniformLocation(programTex, "diffuse5"), 0.5f, 0.5f, 0.5f);
+	glUniform3f(glGetUniformLocation(programTex, "specular5"), 1.0f, 1.0f, 1.0f);
+
+	glUniform1f(glGetUniformLocation(programTex, "constant5"), 1.0f);
+	glUniform1f(glGetUniformLocation(programTex, "linear5"), 0.09f);
+	glUniform1f(glGetUniformLocation(programTex, "quadratic5"), 0.032f);
+
+
+
+// 	glUseProgram(programTex2);
+//	glUniform3f(glGetUniformLocation(programTex2, "lightDir2"), lightPos2.x, lightPos2.y, lightPos2.z);
+//	glUniform3f(glGetUniformLocation(programTex2, "lightDir"), 2, 0, 2);
+
 	//Player drawing
-	player.render(program, glm::vec3(0.6f), cam);
+	player.render(playerProgram, spaceShipTex, glm::vec3(0.6f), cam);
 	
 	//Planet drawing
-	skybox.renderTexture(skyboxProgram,skyboxTex, cam, time,0.0f);
+	skybox.renderSkybox(skyboxProgram, skyboxTex, cam, time,0.0f);
 
-	planet1.renderTexture(skyboxProgram,sunTex, cam, time,55.0f);
-	planet2.render(program, cam, time);
-	planet3.render(program, cam, time);
-	planet4.render(program, cam, time);
-	planet5.render(program, cam, time);
-	planet6.render(program, cam, time);
-	planet7.render(program, cam, time);
+	sun.renderTexture(sunProgram, sunTex, sunTexHdr, cam, time,55.0f);
+	
+	// Planets
+	planet2.renderTexture(programTex, planet2Tex, cam, time, 0.0f);
+	planet3.renderTexture(programTex, planet3Tex, cam, time, 0.0f);
+	planet4.renderTexture(programTex, planet4Tex, cam, time, 0.0f);
+	planet5.renderTexture(programTex, planet5Tex, cam, time, 0.0f);
+	planet6.renderTexture(programTex, planet6Tex, cam, time, 0.0f);
+	planet7.renderTexture(programTex, planet7Tex, cam, time, 0.0f);
+	planet8.renderTextureMoon(programTex, planet8Tex, cam, time, 0.0f,planet2.getActor()->getGlobalPose().p);
 
-	station.render(program, cam, time);
+	station.renderTexture(programTex, spaceStationTex, cam, time, 0.0f);
 	
 	for (std::list<Core::Asteroid>::iterator iter = asteroids.begin(); iter != asteroids.end(); iter++) {
-		iter->render(program, cam, time);
+		iter->renderTexture(programTex2, asteroidTex, asteroidTex_normal, cam, time, 0.0f);
 	}
 
 	for (std::list<Core::Bullet>::iterator iter = bullets.begin(); iter != bullets.end(); iter++) {
 		iter->render(program, cam, time);
 	}
-		
-	//HUD elements rendering
 
+	//HUD elements rendering
 	Core::RenderText(textContext,textProgram, std::string(std::to_string(player.getHealth())), 75.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, "Score: " + std::string(std::to_string(player.getScore())), 20.0f, 670.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderText(textContext, textProgram, std::string(std::to_string(player.getAmmo())) + " / "  + std::string(std::to_string(player.getMags() * 30)), 1130.0f,25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderHud(textContext, textProgram, hudTex, 620, 340, 40.0f,glm::vec3(1.f,1.f,1.f));
 	Core::RenderHud(textContext, textProgram, healthTex, 25, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
 	Core::RenderHud(textContext, textProgram, ammoTex, 1080, 22, 35.0f, glm::vec3(0.5, 0.8f, 0.2f));
+
+	//bloom light render
+	glUseProgram(lightProgram);
+	glm::mat4 projection = cam.getPerspective();
+	glm::mat4 view = cam.getView();
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(lightSource));
+	model = glm::scale(model, glm::vec3(0.25f));
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "projection"), sizeof(projection), GL_FALSE, &projection[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "view"), sizeof(view), GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(lightProgram, "model"), sizeof(lightSource), GL_FALSE, &model[0][0]);
+
+	//TODO: fix model uniforms to program
+	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), sizeof(projection), GL_FALSE, &projection[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(program, "view"), sizeof(view), GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(program, "model"), sizeof(lightSource), GL_FALSE, &model[0][0]);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	bool horizontal = true;
+	bool first_iteration = true;
+	unsigned int amount = 10;
+	glUseProgram(blurProgram);
+	for (unsigned int i = 0; i < amount; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+		glUniform1i(glGetUniformLocation(blurProgram, "horizontal"), horizontal);
+		glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+		renderQuad();
+		horizontal = !horizontal;
+		if (first_iteration)
+			first_iteration = false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glUseProgram(bloomFinalProgram);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "bloom"), 1);
+	glUniform1f(glGetUniformLocation(bloomFinalProgram, "exposure"), 1);
+	
+	renderQuad();
 	glutSwapBuffers();
 }
-
-
 
 
 void init()
 {
 	glEnable(GL_DEPTH_TEST);
+
+	blurProgram = shaderLoader.CreateProgram("shaders/blur_shader.vert", "shaders/blur_shader.frag");
+	program = shaderLoader.CreateProgram("shaders/main_shader.vert", "shaders/main_shader.frag");
+	lightProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/lightBox_shader.frag");
+	sunProgram = shaderLoader.CreateProgram("shaders/shader_sun.vert", "shaders/shader_sun.frag");
+	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
+	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
+	bloomFinalProgram = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
+	programTex = shaderLoader.CreateProgram("shaders/shader_texture.vert", "shaders/shader_texture.frag");
+	programTex2 = shaderLoader.CreateProgram("shaders/shader_tex2.vert", "shaders/shader_tex2.frag");
+	playerProgram = shaderLoader.CreateProgram("shaders/shader_player.vert", "shaders/shader_player.frag");
+
+
+	//testy program
+	glUseProgram(program);
+	glUniform1i(glGetUniformLocation(program, "diffuseTexture"), 0);
+
+
+	glUseProgram(blurProgram);
+	glUniform1i(glGetUniformLocation(blurProgram, "image"), 0);
+
+	glUseProgram(bloomFinalProgram);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "scene"), 0);
+	glUniform1i(glGetUniformLocation(bloomFinalProgram, "bloomBlur"), 1);
+
+	//creating framebuffer
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+	// create 2 floating point color buffers (1 for normal rendering, other for brightness threshold values)
+	glGenTextures(2, colorBuffers);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);  // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		// attach texture to framebuffer
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+	}
+
+	// create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+
+	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+	glDrawBuffers(2, attachments);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// ping-pong-framebuffer for blurring
+	glGenFramebuffers(2, pingpongFBO);
+	glGenTextures(2, pingpongColorbuffers);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+		glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+		// also check if framebuffers are complete (no need for depth buffer)
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			std::cout << "Framebuffer not complete!" << std::endl;
+	}
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//sunProgram = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
-	program = shaderLoader.CreateProgram("shaders/shader.vert", "shaders/shader.frag");
-	skyboxProgram = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
-	textProgram = shaderLoader.CreateProgram("shaders/shader_text.vert", "shaders/shader_text.frag");
+
+
+
 	//Camera object loading
 	cam = Core::Camera(glm::vec3(-103, 0, 0), glm::vec3(0, 0, 0));
 	controller = Core::Controller();
@@ -488,31 +693,46 @@ void init()
 	skyBoxModel = obj::loadModelFromFile("models/skyBoxCube.obj");
 	stationModel = obj::loadModelFromFile("models/spacestation.obj");
 
-	skyboxTex = Core::LoadTexture("textures/Cube2.png");
-	sunTex = Core::LoadTexture("textures/papa.png");
-	hudTex = Core::LoadTexture("textures/kek.png");
-	healthTex = Core::LoadTexture("textures/health.png");
-	ammoTex = Core::LoadTexture("textures/ammo.png");
+	skyboxTex = Core::LoadTextureToFramebuffer("textures/Cube2.png");
+	sunTex = Core::LoadTextureToFramebuffer("textures/papa3.png");
+	hudTex = Core::LoadTextureToFramebuffer("textures/kek.png");
+	healthTex = Core::LoadTextureToFramebuffer("textures/health.png");
+	ammoTex = Core::LoadTextureToFramebuffer("textures/ammo.png");
+	spaceShipTex = Core::LoadTextureToFramebuffer("textures/spaceship.png");
+	asteroidTex = Core::LoadTextureToFramebuffer("textures/asteroid.png");
+	asteroidTex_normal = Core::LoadTextureToFramebuffer("textures/asteroid_normals.png");
+	planet2Tex = Core::LoadTextureToFramebuffer("textures/mars8k.png");
+	planet3Tex = Core::LoadTextureToFramebuffer("textures/haumea.png");
+	planet4Tex = Core::LoadTextureToFramebuffer("textures/jupiter8k.png");
+	planet5Tex = Core::LoadTextureToFramebuffer("textures/karsaw8k.png");
+	planet6Tex = Core::LoadTextureToFramebuffer("textures/neptune2k.png");
+	planet7Tex = Core::LoadTextureToFramebuffer("textures/saturn8k.png");
+	planet8Tex = Core::LoadTextureToFramebuffer("textures/2k_moon.png");
+	spaceStationTex = Core::LoadTextureToFramebuffer("textures/spaceStation.png");
+	
+	sunTexHdr = Core::LoadTextureToFramebuffer("textures/papa3.png");
 
 	sphereContext.initFromOBJ(sphereModel);
 	skyBoxContext.initFromOBJ(skyBoxModel);
 	shipContext.initFromOBJ(shipModel);
 	asteroidContext.initFromOBJ(asteroidModel);
 	stationContext.initFromOBJ(stationModel);
+	sunContext.initFromOBJ(sphereModel);
 
 
 	//Object instantialization
 	player = Core::Player(shipModel.vertex, cam.getPosition(), cam.getFront(), shipContext, 100, 30, 3);
 	skybox = Core::Planet(player.getPosition(), glm::vec3(1.0f, 0.0f, 0.0f), 10000.0f, skyBoxContext);
 	station = Core::Station(glm::vec3(80, 0, -80), stationContext);
-	planet1 = Core::Planet(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f, 30.0f, 0.0f, sphereContext);
-	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2),0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
-	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2),1.1f, 0.01f,203.0f, 10.0f, 0.0f, sphereContext);
-	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2),3.2f, 0.01f,293.0f, 17.0f, 0.0f, sphereContext);
-	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2),5.1f, 0.01f, 373.0f, 24.0f, 0.0f, sphereContext);
+//Suninit
+	sun = Core::Sun(glm::vec3(1.0f, 0.5f, 0.2f), glm::vec3(2, 0, 2),0.0f, 1.0f, 0.0f,   30.0f, 0.0f, sunContext);
+	planet2 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2), 0.3f, 0.01f, 123.0f, 15.0f, 0.0f, sphereContext);
+	planet3 = Core::Planet(glm::vec3(0.0f, 0.5f, 0.1f), glm::vec3(2, 0, 2), 1.1f, 0.01f, 203.0f, 10.0f, 0.0f, sphereContext);
+	planet4 = Core::Planet(glm::vec3(0.5f, 0.1f, 0.3f), glm::vec3(2, 0, 2), 3.2f, 0.01f, 293.0f, 17.0f, 0.0f, sphereContext);
+	planet5 = Core::Planet(glm::vec3(0.9f, 0.9f, 0.7f), glm::vec3(2, 0, 2), 5.1f, 0.01f, 373.0f, 24.0f, 0.0f, sphereContext);
 	planet6 = Core::Planet(glm::vec3(0.4f, 0.2f, 0.3f), glm::vec3(2, 0, 2), 4.0f, 0.01f, 421.0f, 18.0f, 0.0f, sphereContext);
 	planet7 = Core::Planet(glm::vec3(0.1f, 0.0f, 0.5f), glm::vec3(2, 0, 2), 1.7f, 0.01f, 507.0f, 25.0f, 0.0f, sphereContext);
-
+	planet8 = Core::Planet(glm::vec3(0.0f, 0.6f, 0.9f), glm::vec3(2, 0, 2), 0.3f, 0.05f, 123.0f, 4.0f, 50.0f, sphereContext);
 
 	//Physics inits
 	initPhysics(true);
@@ -524,15 +744,19 @@ void init()
 	station.setActor(createDynamic(physx::PxTransform(station.getPositionPx()), stationMesh, station.getScale()));
 	station.setTrigger(createDynamic(physx::PxTransform(station.getPositionPx()), sphereMesh,15.0f,physx::PxU32(3),true));
 	player.setActor(createDynamic(physx::PxTransform(player.getPositionPx()), shipMesh,player.getScale(), physx::PxU32(2)));
-	planet1.setActor(createDynamic(physx::PxTransform(planet1.getPositionPx()), sphereMesh, planet1.getScale()));
+	sun.setActor(createDynamic(physx::PxTransform(sun.getPositionPx()), sphereMesh, sun.getScale()));
 	planet2.setActor(createDynamic(physx::PxTransform(planet2.getPositionPx()), sphereMesh, planet2.getScale()));
 	planet3.setActor(createDynamic(physx::PxTransform(planet3.getPositionPx()), sphereMesh, planet3.getScale()));
 	planet4.setActor(createDynamic(physx::PxTransform(planet4.getPositionPx()), sphereMesh, planet4.getScale()));
 	planet5.setActor(createDynamic(physx::PxTransform(planet5.getPositionPx()), sphereMesh, planet5.getScale()));
 	planet6.setActor(createDynamic(physx::PxTransform(planet6.getPositionPx()), sphereMesh, planet6.getScale()));
 	planet7.setActor(createDynamic(physx::PxTransform(planet7.getPositionPx()), sphereMesh, planet7.getScale()));
+	planet8.setActor(createDynamic(physx::PxTransform(planet8.getPositionPx()), sphereMesh, planet8.getScale()));
+	skybox.setActor(createDynamic(physx::PxTransform(skybox.getPositionPx()), cookMesh(skyBoxModel), skybox.getScale(), physx::PxU32(4), true));
 
-	
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 
 	glutSetCursor(GLUT_CURSOR_NONE);
 }

@@ -35,17 +35,19 @@ void Core::Asteroid::render(GLuint program,Core::Camera cam,float time)
 	glUseProgram(0);
 }
 
-void Core::Asteroid::renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate)
+void Core::Asteroid::renderTexture(GLuint program, GLuint tex, GLuint normalmapId, Core::Camera cam, float time,float rotate)
 {
 	glm::mat4 shipModelMatrix =
 		glm::translate(glm::vec3(actor->getGlobalPose().p.x, actor->getGlobalPose().p.y, actor->getGlobalPose().p.z)) * glm::toMat4(glm::quat(actor->getGlobalPose().q.w, actor->getGlobalPose().q.x, actor->getGlobalPose().q.y, actor->getGlobalPose().q.z))
 		* glm::scale(glm::vec3(scale));
 	glUseProgram(program);
+	glUniform3f(glGetUniformLocation(program, "lightDir"), 2, 0, 2);
 	glUniform3f(glGetUniformLocation(program, "cameraPos"), cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 	glm::mat4 transformation = cam.getPerspective() * cam.getView() * shipModelMatrix;
-	glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, (float*)&shipModelMatrix);
-	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
-	Core::SetActiveTexture(tex, "texCoord", program, 0);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&shipModelMatrix);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelViewProjectionMatrix"), 1, GL_FALSE, (float*)&transformation);
+	Core::SetActiveTexture(tex, "textureSampler", program, 0);
+	Core::SetActiveTexture(normalmapId, "normalSampler", program, 1);
 	Core::DrawContext(context);
 	glUseProgram(0);
 }

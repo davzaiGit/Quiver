@@ -31,6 +31,8 @@ namespace Core
 		Planet(glm::vec3 col = glm::vec3(0, 0, 0), glm::vec3 pos = glm::vec3(0, 0, 0),float poa = 0.0f, float sp = 1.0f, float distance = 0.0f, float sc = 1.0f, float md = 0.0f, Core::RenderContext& ctxt = Core::RenderContext());
 		void render(GLuint program,Core::Camera cam,float time);
 		void renderTexture(GLuint program,GLuint tex, Core::Camera cam, float time,float rotate);
+		void renderSkybox(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate);
+		void renderTextureMoon(GLuint program, GLuint tex, Core::Camera cam, float time, float rotate, physx::PxVec3 pos);
 		glm::vec3 getPosition();
 		void setPosition(glm::vec3 in);
 		physx::PxVec3 getPositionPx();
@@ -44,5 +46,6 @@ namespace Core
 		void setActor(physx::PxRigidDynamic* act);
 		physx::PxRigidDynamic* getActor();
 		void updatePhysics(float time);
+		void updatePhysics(float time,physx::PxVec3 pos);
 	};
 }

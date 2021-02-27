@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include <PxPhysicsAPI.h>
 #include <string>
+#include "Texture.h"
 
 
 namespace Core
@@ -28,7 +29,7 @@ namespace Core
 		Player();
 		Player(std::vector<float> vert,glm::vec3 pos = glm::vec3(0, 0, 0),glm::vec3 fr = glm::vec3(0, 0, 0),Core::RenderContext& ctxt = Core::RenderContext(),int health = 100, int ammo = 30, int mags = 3);
 		void render(GLuint program, glm::vec3 color, Core::Camera cam, float yaw, float pitch);
-		void render(GLuint program, glm::vec3 color, Core::Camera cam);
+		void render(GLuint program, GLuint textureId, glm::vec3 color, Core::Camera cam);
 		void setHealth(int in);
 		int getHealth();
 		void setScore(int in);
@@ -55,5 +56,3 @@ namespace Core
 		void updatePhysics();
 	};
 }
-
-
